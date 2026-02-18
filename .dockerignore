@@ -1,0 +1,28 @@
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NLTK data (downloaded at runtime)
+nltk_data/
+
+# Distribution
+*.egg-info/
+dist/
+build/
+
+# PDF (paper)
+*.pdf

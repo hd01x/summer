@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>PCoA — Phrase-Level Context Attribution</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ========================================================================= */
+/*  DESIGN SYSTEM                                                             */
+/* ========================================================================= */
+:root{
+  --bg:#f4f6fb;--surface:#fff;--surface2:#f8fafd;
+  --border:#e4e8f1;--border2:#d1d8e8;
+  --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+  --primary:#2563eb;--primary-light:#dbeafe;--primary-dark:#1d4ed8;
+  --accent:#7c3aed;--accent-light:#ede9fe;
+  --red:#dc2626;--red-light:#fef2f2;--red-border:#fca5a5;
+  --green:#059669;--green-light:#ecfdf5;--green-border:#6ee7b7;
+  --amber:#d97706;--amber-light:#fffbeb;
+  --blue:#0284c7;--blue-light:#e0f2fe;
+  --radius:12px;--radius-sm:8px;--radius-lg:16px;--radius-xl:24px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg:0 10px 30px rgba(0,0,0,.1);
+  --font:'Inter',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --transition:all .2s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);
+  line-height:1.6;-webkit-font-smoothing:antialiased}
+::selection{background:var(--primary-light);color:var(--primary-dark)}
+
+/* ========================================================================= */
+/*  LAYOUT                                                                    */
+/* ========================================================================= */
+.container{max-width:1280px;margin:0 auto;padding:0 2rem}
+@media(max-width:768px){.container{padding:0 1rem}}
+
+/* ========================================================================= */
+/*  HEADER                                                                    */
+/* ========================================================================= */
+.header{
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 40%,#1e3a5f 100%);
+  color:#fff;padding:0;position:relative;overflow:hidden;
+}
+.header::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 70% 20%,rgba(37,99,235,.25) 0%,transparent 60%),
+             radial-gradient(circle at 20% 80%,rgba(124,58,237,.15) 0%,transparent 50%);
+}
+.header-inner{position:relative;display:flex;align-items:center;
+  justify-content:space-between;padding:2.2rem 2rem;flex-wrap:wrap;gap:1.5rem}
+.header-text h1{font-size:1.75rem;font-weight:800;letter-spacing:-.03em;
+  line-height:1.2;margin-bottom:.35rem}
+.header-text h1 span{
+  background:linear-gradient(135deg,#60a5fa,#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.header-text p{font-size:.88rem;color:rgba(255,255,255,.7);max-width:540px;line-height:1.6}
+.header-badges{display:flex;gap:.5rem;margin-top:.65rem;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:4px;
+  padding:3px 11px;border-radius:20px;font-size:.7rem;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase}
+.badge-acl{background:rgba(96,165,250,.2);color:#93c5fd;border:1px solid rgba(96,165,250,.3)}
+.badge-arxiv{background:rgba(167,139,250,.18);color:#c4b5fd;border:1px solid rgba(167,139,250,.3)}
+.badge-github{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15)}
+.header-logo{font-size:3rem;font-weight:800;letter-spacing:-.04em;
+  background:linear-gradient(135deg,#60a5fa,#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;opacity:.15;
+  user-select:none;line-height:1}
+
+/* ========================================================================= */
+/*  TOOLBAR / CONTROLS                                                        */
+/* ========================================================================= */
+.toolbar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+}
+.toolbar-inner{display:flex;align-items:stretch;min-height:52px}
+.toolbar-tab{
+  padding:0 1.3rem;font-size:.8rem;font-weight:600;color:var(--text2);
+  border:none;background:none;cursor:pointer;position:relative;
+  display:flex;align-items:center;gap:6px;transition:var(--transition);
+  border-bottom:2px solid transparent;
+}
+.toolbar-tab:hover{color:var(--text);background:var(--surface2)}
+.toolbar-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.toolbar-tab .ico{font-size:1rem}
+.toolbar-right{margin-left:auto;display:flex;align-items:center;padding-right:.5rem;gap:.4rem}
+.toolbar-btn{
+  padding:6px 14px;font-size:.78rem;font-weight:600;border-radius:var(--radius-sm);
+  border:1px solid var(--border);background:var(--surface);color:var(--text);
+  cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:5px;
+}
+.toolbar-btn:hover{border-color:var(--border2);box-shadow:var(--shadow)}
+.toolbar-btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.toolbar-btn.primary:hover{background:var(--primary-dark)}
+.toolbar-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ========================================================================= */
+/*  MAIN GRID                                                                 */
+/* ========================================================================= */
+.main{padding:1.5rem 0 4rem}
+.grid{display:grid;grid-template-columns:380px 1fr;gap:1.5rem;align-items:start}
+@media(max-width:1024px){.grid{grid-template-columns:1fr}}
+
+/* ========================================================================= */
+/*  PANELS                                                                    */
+/* ========================================================================= */
+.panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);overflow:hidden;
+}
+.panel-header{
+  padding:1rem 1.25rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:.6rem;
+}
+.panel-header h2{font-size:.85rem;font-weight:700;color:var(--text)}
+.panel-header .count{
+  font-size:.7rem;font-weight:600;background:var(--primary-light);
+  color:var(--primary);padding:1px 8px;border-radius:10px;
+}
+.panel-body{padding:1rem 1.25rem}
+.panel-body.flush{padding:0}
+
+/* ========================================================================= */
+/*  INPUT SECTION                                                             */
+/* ========================================================================= */
+.input-group{margin-bottom:1rem}
+.input-group label{display:block;font-size:.75rem;font-weight:600;
+  color:var(--text2);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em}
+.input-row{display:flex;gap:.5rem}
+input[type="text"],textarea,select{
+  width:100%;padding:9px 12px;font-size:.85rem;font-family:var(--font);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--surface2);color:var(--text);transition:var(--transition);
+  outline:none;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+textarea{resize:vertical;min-height:100px;line-height:1.5}
+select{cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;
+}
+
+/* ========================================================================= */
+/*  ASPECT CHIPS                                                              */
+/* ========================================================================= */
+.aspect-grid{display:flex;flex-wrap:wrap;gap:6px}
+.aspect-chip{
+  padding:5px 12px;border-radius:20px;font-size:.72rem;font-weight:600;
+  border:1px solid var(--border);background:var(--surface);color:var(--text2);
+  cursor:pointer;transition:var(--transition);user-select:none;
+  display:flex;align-items:center;gap:4px;
+}
+.aspect-chip:hover{border-color:var(--primary);color:var(--primary)}
+.aspect-chip.selected{
+  background:var(--primary);color:#fff;border-color:var(--primary);
+}
+.aspect-chip .code{font-family:var(--mono);font-size:.68rem}
+.chip-actions{display:flex;gap:.5rem;margin-top:.6rem}
+.chip-link{font-size:.72rem;color:var(--primary);cursor:pointer;
+  font-weight:500;text-decoration:none}
+.chip-link:hover{text-decoration:underline}
+
+/* ========================================================================= */
+/*  STRATEGY CARDS                                                            */
+/* ========================================================================= */
+.strategy-cards{display:flex;flex-direction:column;gap:.5rem}
+.strategy-card{
+  padding:.75rem 1rem;border:1.5px solid var(--border);border-radius:var(--radius);
+  cursor:pointer;transition:var(--transition);position:relative;
+}
+.strategy-card:hover{border-color:var(--primary-dark);background:var(--surface2)}
+.strategy-card.selected{border-color:var(--primary);background:var(--primary-light)}
+.strategy-card.selected::after{
+  content:'✓';position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:var(--primary);color:#fff;width:20px;height:20px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;
+}
+.strategy-card h4{font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:2px}
+.strategy-card p{font-size:.72rem;color:var(--text3);line-height:1.4}
+.strategy-best{
+  display:inline-block;font-size:.6rem;font-weight:700;
+  background:var(--green);color:#fff;padding:1px 7px;border-radius:8px;
+  margin-left:6px;vertical-align:middle;text-transform:uppercase;letter-spacing:.04em;
+}
+
+/* ========================================================================= */
+/*  ARTICLE LIST                                                              */
+/* ========================================================================= */
+.article-list{max-height:520px;overflow-y:auto}
+.article-item{
+  padding:.9rem 1.25rem;border-bottom:1px solid var(--border);
+  cursor:pointer;transition:var(--transition);
+}
+.article-item:last-child{border-bottom:none}
+.article-item:hover{background:var(--surface2)}
+.article-item.selected{background:var(--primary-light);border-left:3px solid var(--primary)}
+.article-item h3{font-size:.82rem;font-weight:600;color:var(--text);
+  line-height:1.4;margin-bottom:.25rem;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.article-meta{font-size:.7rem;color:var(--text3);display:flex;gap:.6rem;flex-wrap:wrap}
+.article-meta span{display:flex;align-items:center;gap:3px}
+
+/* ========================================================================= */
+/*  RESULTS AREA                                                              */
+/* ========================================================================= */
+.results-placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:500px;text-align:center;padding:3rem;color:var(--text3);
+}
+.results-placeholder .icon{font-size:3.5rem;margin-bottom:1rem;opacity:.4}
+.results-placeholder h3{font-size:1.1rem;font-weight:700;color:var(--text2);margin-bottom:.5rem}
+.results-placeholder p{font-size:.85rem;max-width:380px;line-height:1.6}
+
+/* Aspect tabs */
+.aspect-tabs{
+  display:flex;overflow-x:auto;border-bottom:1px solid var(--border);
+  background:var(--surface2);
+}
+.aspect-tab{
+  padding:.7rem 1.1rem;font-size:.75rem;font-weight:600;color:var(--text2);
+  border:none;background:none;cursor:pointer;white-space:nowrap;
+  border-bottom:2px solid transparent;transition:var(--transition);
+}
+.aspect-tab:hover{color:var(--text);background:rgba(0,0,0,.02)}
+.aspect-tab.active{color:var(--primary);border-bottom-color:var(--primary);background:var(--surface)}
+
+/* Result blocks */
+.result-block{padding:1.5rem}
+.result-section{margin-bottom:1.5rem}
+.result-section:last-child{margin-bottom:0}
+.section-label{
+  font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--text3);margin-bottom:.6rem;display:flex;align-items:center;gap:6px;
+}
+.section-label .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-summary{background:var(--primary)}
+.dot-citation{background:var(--red)}
+.dot-phrase{background:var(--accent)}
+
+/* Summary card */
+.summary-card{
+  background:linear-gradient(135deg,#f0f7ff 0%,#eef2ff 100%);
+  border:1px solid #c7d7f5;border-radius:var(--radius);
+  padding:1.1rem 1.3rem;font-size:.9rem;line-height:1.75;color:var(--text);
+  position:relative;
+}
+.summary-card::before{
+  content:'"';position:absolute;top:-.15rem;left:.7rem;font-size:2.5rem;
+  color:var(--primary);opacity:.2;font-family:Georgia,serif;line-height:1;
+}
+
+/* Sentence list in results */
+.cited-sentence{
+  padding:.7rem 1rem;border-radius:var(--radius-sm);margin-bottom:.4rem;
+  border-left:3px solid var(--red);background:var(--red-light);
+  font-size:.84rem;line-height:1.65;position:relative;
+}
+.cited-sentence .s-idx{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:22px;height:22px;background:var(--red);color:#fff;
+  border-radius:6px;font-size:.68rem;font-weight:700;margin-right:8px;
+  font-family:var(--mono);flex-shrink:0;
+}
+
+/* Phrase chips */
+.phrase-list{display:flex;flex-wrap:wrap;gap:6px}
+.phrase-chip{
+  padding:5px 12px;border-radius:8px;font-size:.78rem;font-weight:500;
+  background:var(--accent-light);color:var(--accent);border:1px solid #d8b4fe;
+}
+
+/* Phrase highlight in sentences */
+.phrase-hl{
+  background:var(--accent-light);color:var(--accent);
+  padding:0 3px;border-radius:3px;font-weight:500;
+  border-bottom:2px solid var(--accent);
+}
+
+/* ========================================================================= */
+/*  SOURCE ABSTRACT VIEWER                                                    */
+/* ========================================================================= */
+.abstract-viewer{padding:1rem 1.25rem}
+.abstract-sentence{
+  padding:.55rem .9rem;border-radius:var(--radius-sm);margin-bottom:.3rem;
+  font-size:.82rem;line-height:1.6;display:flex;align-items:start;gap:.5rem;
+  transition:var(--transition);
+}
+.abstract-sentence:hover{background:var(--surface2)}
+.abstract-sentence.highlighted{background:var(--red-light);border-left:3px solid var(--red)}
+.abs-idx{
+  flex-shrink:0;min-width:24px;height:22px;display:inline-flex;
+  align-items:center;justify-content:center;border-radius:6px;
+  font-size:.68rem;font-weight:700;font-family:var(--mono);
+  background:var(--surface2);color:var(--text3);margin-top:2px;
+}
+.abstract-sentence.highlighted .abs-idx{background:var(--red);color:#fff}
+
+/* ========================================================================= */
+/*  PROGRESS / LOADING                                                        */
+/* ========================================================================= */
+.progress-overlay{
+  display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);
+  backdrop-filter:blur(4px);z-index:1000;
+  align-items:center;justify-content:center;
+}
+.progress-overlay.active{display:flex}
+.progress-box{
+  background:var(--surface);border-radius:var(--radius-lg);padding:2.5rem 3rem;
+  text-align:center;box-shadow:var(--shadow-lg);max-width:400px;width:90%;
+}
+.progress-box h3{font-size:1rem;font-weight:700;margin-bottom:.3rem}
+.progress-box p{font-size:.82rem;color:var(--text2);margin-bottom:1.2rem}
+.progress-bar-track{
+  height:6px;border-radius:3px;background:var(--surface2);overflow:hidden;
+  margin-bottom:.6rem;
+}
+.progress-bar-fill{
+  height:100%;border-radius:3px;width:0%;
+  background:linear-gradient(90deg,var(--primary),var(--accent));
+  transition:width .4s ease;
+}
+.progress-label{font-size:.72rem;color:var(--text3);font-weight:500}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{
+  width:28px;height:28px;border:3px solid var(--border);
+  border-top-color:var(--primary);border-radius:50%;
+  animation:spin .8s linear infinite;margin:0 auto 1rem;
+}
+
+/* ========================================================================= */
+/*  FOOTER                                                                    */
+/* ========================================================================= */
+.footer{
+  text-align:center;padding:2rem 0;font-size:.72rem;color:var(--text3);
+  border-top:1px solid var(--border);margin-top:2rem;
+}
+.footer a{color:var(--primary);text-decoration:none;font-weight:500}
+.footer a:hover{text-decoration:underline}
+
+/* ========================================================================= */
+/*  TOAST                                                                     */
+/* ========================================================================= */
+.toast-container{position:fixed;top:1rem;right:1rem;z-index:2000;display:flex;flex-direction:column;gap:.5rem}
+.toast{
+  padding:.7rem 1.1rem;border-radius:var(--radius-sm);font-size:.8rem;font-weight:500;
+  box-shadow:var(--shadow-md);animation:slideIn .3s ease;min-width:260px;
+  display:flex;align-items:center;gap:8px;
+}
+.toast-error{background:#fef2f2;color:#991b1b;border:1px solid var(--red-border)}
+.toast-success{background:var(--green-light);color:#065f46;border:1px solid var(--green-border)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ========================================================================= */
+/*  SCROLLBAR                                                                 */
+/* ========================================================================= */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+/* Input mode tabs */
+.mode-tabs{display:flex;gap:0;margin-bottom:1rem;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.mode-tab{flex:1;padding:7px 0;font-size:.72rem;font-weight:600;text-align:center;
+  border:none;background:var(--surface2);color:var(--text2);cursor:pointer;transition:var(--transition)}
+.mode-tab:not(:last-child){border-right:1px solid var(--border)}
+.mode-tab:hover{background:var(--surface)}
+.mode-tab.active{background:var(--primary);color:#fff}
+
+.hidden{display:none!important}
+
+/* Strategy info tooltip */
+.strategy-info-bar{
+  font-size:.72rem;color:var(--text3);padding:.5rem 1.25rem;
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:6px;
+}
+</style>
+</head>
+<body>
+
+<!-- ====================================================================== -->
+<!--  HEADER                                                                 -->
+<!-- ====================================================================== -->
+<header class="header">
+  <div class="container header-inner">
+    <div class="header-text">
+      <h1>PCoA: Medical Aspect-Based <span>Summarization</span></h1>
+      <p>Phrase-Level Context Attribution for Randomized Controlled Trial Articles.
+         Retrieve, analyze, and summarize clinical evidence with traceable citations.</p>
+      <div class="header-badges">
+        <span class="badge badge-acl">ACL 2026 Demo</span>
+        <span class="badge badge-arxiv">arXiv 2601.03418</span>
+      </div>
+    </div>
+    <div class="header-logo">PCoA</div>
+  </div>
+</header>
+
+<!-- ====================================================================== -->
+<!--  MAIN                                                                   -->
+<!-- ====================================================================== -->
+<div class="container main">
+  <div class="grid">
+
+    <!-- ================================================================== -->
+    <!--  LEFT PANEL                                                         -->
+    <!-- ================================================================== -->
+    <div style="display:flex;flex-direction:column;gap:1.2rem">
+
+      <!-- Input Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>1 &nbsp;Article Input</h2>
+        </div>
+        <div class="panel-body">
+          <div class="mode-tabs">
+            <button class="mode-tab active" data-mode="search" onclick="setMode('search')">PubMed Search</button>
+            <button class="mode-tab" data-mode="pmid" onclick="setMode('pmid')">PMID Lookup</button>
+            <button class="mode-tab" data-mode="paste" onclick="setMode('paste')">Paste Abstract</button>
+          </div>
+
+          <!-- Search mode -->
+          <div id="mode-search">
+            <div class="input-group">
+              <label>PubMed Query</label>
+              <textarea id="search-query" rows="3">melanoma[MeSH Terms] AND "randomized controlled trial"[Publication Type] AND english[Language]</textarea>
+            </div>
+            <div class="input-row">
+              <select id="search-max" style="width:auto;min-width:80px">
+                <option value="5">5</option><option value="10" selected>10</option>
+                <option value="20">20</option><option value="50">50</option>
+              </select>
+              <button class="toolbar-btn primary" style="flex:1" onclick="doSearch()">
+                Search PubMed
+              </button>
+            </div>
+          </div>
+
+          <!-- PMID mode -->
+          <div id="mode-pmid" class="hidden">
+            <div class="input-group">
+              <label>PubMed ID</label>
+              <div class="input-row">
+                <input type="text" id="pmid-input" placeholder="e.g. 34984539"/>
+                <button class="toolbar-btn primary" onclick="doFetchPMID()">Fetch</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paste mode -->
+          <div id="mode-paste" class="hidden">
+            <div class="input-group">
+              <label>Title (optional)</label>
+              <input type="text" id="paste-title" placeholder="Article title"/>
+            </div>
+            <div class="input-group">
+              <label>Abstract</label>
+              <textarea id="paste-abstract" rows="6" placeholder="Paste a medical article abstract here…"></textarea>
+            </div>
+            <button class="toolbar-btn primary" style="width:100%" onclick="doPaste()">Use This Abstract</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Strategy Panel -->
+      <div class="panel">
+        <div class="panel-header"><h2>2 &nbsp;Attribution Strategy</h2></div>
+        <div class="panel-body">
+          <div class="strategy-cards">
+            <div class="strategy-card selected" data-strategy="prior" onclick="selectStrategy('prior')">
+              <h4>Prior Attribution <span class="strategy-best">Best</span></h4>
+              <p>Identifies relevant sentences & phrases first, then generates summary. Highest F1 (§5.2).</p>
+            </div>
+            <div class="strategy-card" data-strategy="intrinsic" onclick="selectStrategy('intrinsic')">
+              <h4>Intrinsic Attribution</h4>
+              <p>Generates summary, citations, and phrases in a single step.</p>
+            </div>
+            <div class="strategy-card" data-strategy="post-hoc" onclick="selectStrategy('post-hoc')">
+              <h4>Post-Hoc Attribution</h4>
+              <p>Generates summary first, then retrieves supporting evidence.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aspect Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>3 &nbsp;Medical Aspects</h2>
+          <span class="count" id="aspect-count">6 / 16</span>
+        </div>
+        <div class="panel-body">
+          <div class="aspect-grid" id="aspect-grid"></div>
+          <div class="chip-actions">
+            <a class="chip-link" onclick="selectAllAspects()">Select all</a>
+            <a class="chip-link" onclick="selectPICO()">PICO only</a>
+            <a class="chip-link" onclick="clearAspects()">Clear</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Article List -->
+      <div class="panel" id="article-panel" style="display:none">
+        <div class="panel-header">
+          <h2>Articles</h2>
+          <span class="count" id="article-count">0</span>
+        </div>
+        <div class="panel-body flush">
+          <div class="article-list" id="article-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!--  RIGHT PANEL — RESULTS                                              -->
+    <!-- ================================================================== -->
+    <div>
+      <!-- Selected article info bar -->
+      <div class="panel" id="selected-bar" style="display:none;margin-bottom:1.2rem">
+        <div class="panel-body" style="padding:.8rem 1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:.82rem;font-weight:700;color:var(--text)" id="sel-title"></div>
+            <div style="font-size:.7rem;color:var(--text3)" id="sel-meta"></div>
+          </div>
+          <button class="toolbar-btn primary" id="run-btn" onclick="runPipeline()">
+            ▶ &nbsp;Run PCoA Pipeline
+          </button>
+        </div>
+      </div>
+
+      <!-- Results panel -->
+      <div class="panel" id="results-panel">
+        <!-- Placeholder -->
+        <div class="results-placeholder" id="results-placeholder">
+          <div class="icon">🔬</div>
+          <h3>PCoA Pipeline</h3>
+          <p>Search PubMed for an RCT article, select medical aspects and an
+             attribution strategy, then run the pipeline to generate
+             aspect-based summaries with traceable citations.</p>
+        </div>
+
+        <!-- Actual results (hidden initially) -->
+        <div id="results-content" style="display:none">
+          <div class="strategy-info-bar" id="results-strategy-bar"></div>
+          <div class="aspect-tabs" id="result-tabs"></div>
+          <div id="result-panels"></div>
+        </div>
+      </div>
+
+      <!-- Source abstract panel -->
+      <div class="panel" id="abstract-panel" style="display:none;margin-top:1.2rem">
+        <div class="panel-header">
+          <h2>Source Abstract</h2>
+          <span class="count" id="sent-count">0 sentences</span>
+        </div>
+        <div class="panel-body flush">
+          <div class="abstract-viewer" id="abstract-viewer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================================== -->
+<!--  PROGRESS OVERLAY                                                       -->
+<!-- ====================================================================== -->
+<div class="progress-overlay" id="progress-overlay">
+  <div class="progress-box">
+    <div class="spinner"></div>
+    <h3 id="progress-title">Running PCoA Pipeline</h3>
+    <p id="progress-subtitle">Analyzing article with GPT-4o…</p>
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-fill"></div></div>
+    <div class="progress-label" id="progress-label">Preparing…</div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ====================================================================== -->
+<!--  FOOTER                                                                 -->
+<!-- ====================================================================== -->
+<div class="container">
+  <div class="footer">
+    <strong>PCoA</strong> &mdash; Phrase-Level Context Attribution for Medical Aspect-Based Summarization<br/>
+    Chu, Frihat, Pakull, Damm, Li, Muhabbek, Lodde, Fuhr &middot; University of Duisburg-Essen &middot;
+    <a href="https://arxiv.org/abs/2601.03418" target="_blank">arXiv: 2601.03418</a>
+  </div>
+</div>
+
+<!-- ====================================================================== -->
+<!--  JAVASCRIPT                                                             -->
+<!-- ====================================================================== -->
+<script>
+/* ========================================================================= */
+/*  STATE                                                                     */
+/* ========================================================================= */
+const ASPECTS_META = [
+  {code:'OB',name:'Objective'},{code:'P',name:'Participants'},
+  {code:'I',name:'Intervention'},{code:'C',name:'Comparator'},
+  {code:'O',name:'Outcomes'},{code:'F',name:'Findings'},
+  {code:'M',name:'Medicines'},{code:'TD',name:'Treat. Duration'},
+  {code:'PE',name:'Primary EP'},{code:'SE',name:'Secondary EP'},
+  {code:'FD',name:'Follow-Up'},{code:'AE',name:'Adverse Events'},
+  {code:'R',name:'Randomization'},{code:'B',name:'Blinding'},
+  {code:'FU',name:'Funding'},{code:'RE',name:'Registration'},
+];
+const DEFAULT_SELECTION = ['OB','P','I','C','O','F'];
+
+let state = {
+  mode: 'search',
+  strategy: 'prior',
+  selectedAspects: new Set(DEFAULT_SELECTION),
+  articles: [],
+  selectedArticle: null,
+  analysis: null,
+  activeResultTab: 0,
+};
+
+/* ========================================================================= */
+/*  INIT                                                                      */
+/* ========================================================================= */
+document.addEventListener('DOMContentLoaded', () => {
+  renderAspectGrid();
+  updateAspectCount();
+});
+
+/* ========================================================================= */
+/*  INPUT MODE                                                                */
+/* ========================================================================= */
+function setMode(mode) {
+  state.mode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+  ['search','pmid','paste'].forEach(m => {
+    document.getElementById('mode-' + m).classList.toggle('hidden', m !== mode);
+  });
+}
+
+/* ========================================================================= */
+/*  STRATEGY                                                                  */
+/* ========================================================================= */
+function selectStrategy(s) {
+  state.strategy = s;
+  document.querySelectorAll('.strategy-card').forEach(c =>
+    c.classList.toggle('selected', c.dataset.strategy === s));
+}
+
+/* ========================================================================= */
+/*  ASPECTS                                                                   */
+/* ========================================================================= */
+function renderAspectGrid() {
+  const grid = document.getElementById('aspect-grid');
+  grid.innerHTML = ASPECTS_META.map(a => `
+    <div class="aspect-chip ${state.selectedAspects.has(a.code)?'selected':''}"
+         data-code="${a.code}" onclick="toggleAspect('${a.code}',this)">
+      <span class="code">${a.code}</span> ${a.name}
+    </div>
+  `).join('');
+}
+function toggleAspect(code, el) {
+  if (state.selectedAspects.has(code)) state.selectedAspects.delete(code);
+  else state.selectedAspects.add(code);
+  el.classList.toggle('selected');
+  updateAspectCount();
+}
+function selectAllAspects() {
+  ASPECTS_META.forEach(a => state.selectedAspects.add(a.code));
+  renderAspectGrid(); updateAspectCount();
+}
+function selectPICO() {
+  state.selectedAspects = new Set(['P','I','C','O']);
+  renderAspectGrid(); updateAspectCount();
+}
+function clearAspects() {
+  state.selectedAspects.clear();
+  renderAspectGrid(); updateAspectCount();
+}
+function updateAspectCount() {
+  document.getElementById('aspect-count').textContent =
+    state.selectedAspects.size + ' / 16';
+}
+
+/* ========================================================================= */
+/*  API HELPERS                                                               */
+/* ========================================================================= */
+async function api(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({detail: res.statusText}));
+    throw new Error(err.detail || 'Request failed');
+  }
+  return res.json();
+}
+
+/* ========================================================================= */
+/*  SEARCH / FETCH                                                            */
+/* ========================================================================= */
+async function doSearch() {
+  const query = document.getElementById('search-query').value.trim();
+  const max = parseInt(document.getElementById('search-max').value);
+  if (!query) return showToast('Enter a search query', 'error');
+  showProgress('Searching PubMed', 'Querying NCBI E-utilities…');
+  try {
+    const articles = await api('/api/search', {query, max_results: max});
+    state.articles = articles;
+    state.selectedArticle = null;
+    state.analysis = null;
+    hideProgress();
+    renderArticleList();
+    showToast(`Found ${articles.length} articles`, 'success');
+  } catch (e) {
+    hideProgress();
+    showToast(e.message, 'error');
+  }
+}
+
+async function doFetchPMID() {
+  const pmid = document.getElementById('pmid-input').value.trim();
+  if (!pmid) return showToast('Enter a PMID', 'error');
+  showProgress('Fetching Article', `Loading PMID ${pmid}…`);
+  try {
+    const article = await api('/api/fetch', {pmid});
+    state.articles = [article];
+    state.selectedArticle = article;
+    state.analysis = null;
+    hideProgress();
+    renderArticleList();
+    selectArticle(0);
+    showToast('Article loaded', 'success');
+  } catch (e) {
+    hideProgress();
+    showToast(e.message, 'error');
+  }
+}
+
+function doPaste() {
+  const abstract = document.getElementById('paste-abstract').value.trim();
+  const title = document.getElementById('paste-title').value.trim() || 'Custom Article';
+  if (!abstract) return showToast('Paste an abstract', 'error');
+  const article = {pmid:'custom', title, abstract, authors:[], journal:'', pub_date:'', doi:''};
+  state.articles = [article];
+  state.selectedArticle = article;
+  state.analysis = null;
+  renderArticleList();
+  selectArticle(0);
+  showToast('Abstract loaded', 'success');
+}
+
+/* ========================================================================= */
+/*  ARTICLE LIST                                                              */
+/* ========================================================================= */
+function renderArticleList() {
+  const panel = document.getElementById('article-panel');
+  const list = document.getElementById('article-list');
+  document.getElementById('article-count').textContent = state.articles.length;
+  if (!state.articles.length) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  list.innerHTML = state.articles.map((a, i) => `
+    <div class="article-item ${state.selectedArticle === a ? 'selected' : ''}"
+         onclick="selectArticle(${i})">
+      <h3>${esc(a.title)}</h3>
+      <div class="article-meta">
+        <span>PMID: ${a.pmid}</span>
+        ${a.journal ? `<span>${esc(a.journal)}</span>` : ''}
+        ${a.pub_date ? `<span>${a.pub_date}</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectArticle(idx) {
+  state.selectedArticle = state.articles[idx];
+  state.analysis = null;
+  renderArticleList();
+  showSelectedBar();
+  renderAbstract();
+  document.getElementById('results-content').style.display = 'none';
+  document.getElementById('results-placeholder').style.display = '';
+}
+
+function showSelectedBar() {
+  const bar = document.getElementById('selected-bar');
+  const a = state.selectedArticle;
+  if (!a) { bar.style.display = 'none'; return; }
+  bar.style.display = '';
+  document.getElementById('sel-title').textContent = a.title;
+  const parts = [`PMID: ${a.pmid}`];
+  if (a.journal) parts.push(a.journal);
+  if (a.authors?.length) parts.push(a.authors.slice(0,3).join(', ') + (a.authors.length > 3 ? ' et al.' : ''));
+  document.getElementById('sel-meta').textContent = parts.join(' · ');
+}
+
+function renderAbstract(highlightIndices, highlightPhrases) {
+  const a = state.selectedArticle;
+  const panel = document.getElementById('abstract-panel');
+  if (!a) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  // Use backend-indexed sentences if analysis is available, else fallback to client-side split
+  let sents;
+  if (state.analysis && state.analysis.sentences && state.analysis.sentences.length) {
+    sents = state.analysis.sentences.map(s => ({idx: s.index, text: s.text}));
+  } else {
+    const raw = splitSentences(a.abstract);
+    sents = raw.map((s, i) => ({idx: i + 1, text: s}));
+  }
+  document.getElementById('sent-count').textContent = sents.length + ' sentences';
+  const hl = new Set(highlightIndices || []);
+  const viewer = document.getElementById('abstract-viewer');
+  viewer.innerHTML = sents.map(s => {
+    const isHl = hl.has(s.idx);
+    let text = esc(s.text);
+    if (isHl && highlightPhrases?.length) text = highlightInText(text, highlightPhrases);
+    return `<div class="abstract-sentence${isHl ? ' highlighted' : ''}">
+      <span class="abs-idx">${s.idx}</span><span>${text}</span></div>`;
+  }).join('');
+}
+
+/* ========================================================================= */
+/*  RUN PIPELINE                                                              */
+/* ========================================================================= */
+async function runPipeline() {
+  const a = state.selectedArticle;
+  if (!a) return showToast('Select an article first', 'error');
+  const aspects = [...state.selectedAspects];
+  if (!aspects.length) return showToast('Select at least one aspect', 'error');
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  showProgress('Running PCoA Pipeline',
+    `Analyzing ${aspects.length} aspect${aspects.length>1?'s':''} with ${state.strategy} attribution…`);
+  setProgress(10, 'Sending request to GPT-4o…');
+
+  try {
+    // simulate gradual progress
+    const progressTimer = setInterval(() => {
+      const cur = parseFloat(document.getElementById('progress-fill').style.width) || 10;
+      if (cur < 85) setProgress(cur + Math.random() * 8, 'Processing aspects…');
+    }, 2000);
+
+    const result = await api('/api/analyze', {
+      pmid: a.pmid, title: a.title, abstract: a.abstract,
+      aspects, strategy: state.strategy,
+    });
+    clearInterval(progressTimer);
+    setProgress(100, 'Done!');
+    state.analysis = result;
+    setTimeout(() => {
+      hideProgress();
+      renderResults();
+    }, 400);
+    showToast('Pipeline complete!', 'success');
+  } catch (e) {
+    hideProgress();
+    showToast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ========================================================================= */
+/*  RENDER RESULTS                                                            */
+/* ========================================================================= */
+function renderResults() {
+  const r = state.analysis;
+  if (!r || !r.results.length) return;
+  document.getElementById('results-placeholder').style.display = 'none';
+  document.getElementById('results-content').style.display = '';
+
+  const strategyLabels = {
+    prior: 'Prior Context Attribution (Best F1)',
+    intrinsic: 'Intrinsic Context Attribution',
+    'post-hoc': 'Post-Hoc Context Attribution',
+  };
+  document.getElementById('results-strategy-bar').innerHTML =
+    `<strong>Strategy:</strong>&nbsp; ${strategyLabels[r.strategy] || r.strategy}
+     &nbsp;&middot;&nbsp; <strong>Model:</strong>&nbsp; GPT-4o
+     &nbsp;&middot;&nbsp; <strong>Aspects:</strong>&nbsp; ${r.results.length}`;
+
+  // Tabs
+  const tabs = document.getElementById('result-tabs');
+  tabs.innerHTML = r.results.map((res, i) => `
+    <button class="aspect-tab${i===0?' active':''}" onclick="switchResultTab(${i})">
+      ${res.aspect_code}: ${res.aspect_name}
+    </button>
+  `).join('');
+
+  // Panels
+  renderResultPanel(0);
+  state.activeResultTab = 0;
+}
+
+function switchResultTab(idx) {
+  state.activeResultTab = idx;
+  document.querySelectorAll('.aspect-tab').forEach((t, i) =>
+    t.classList.toggle('active', i === idx));
+  renderResultPanel(idx);
+}
+
+function renderResultPanel(idx) {
+  const res = state.analysis.results[idx];
+  const panels = document.getElementById('result-panels');
+
+  if (res.error) {
+    panels.innerHTML = `<div class="result-block">
+      <div style="padding:2rem;text-align:center;color:var(--red)">
+        <strong>Error:</strong> ${esc(res.error)}</div></div>`;
+    return;
+  }
+
+  panels.innerHTML = `
+    <div class="result-block">
+      <!-- SUMMARY -->
+      <div class="result-section">
+        <div class="section-label"><span class="dot dot-summary"></span> Summary</div>
+        <div class="summary-card">${esc(res.summary)}</div>
+      </div>
+
+      <!-- CITED SENTENCES -->
+      <div class="result-section">
+        <div class="section-label">
+          <span class="dot dot-citation"></span>
+          Cited Sentences
+          <span class="count">${res.cited_sentences.length}</span>
+        </div>
+        ${res.cited_sentences.map(s => {
+          let text = esc(s.text);
+          if (res.key_phrases.length) text = highlightInText(text, res.key_phrases);
+          return `<div class="cited-sentence">
+            <span class="s-idx">${s.index}</span>${text}</div>`;
+        }).join('')}
+      </div>
+
+      <!-- KEY PHRASES -->
+      <div class="result-section">
+        <div class="section-label">
+          <span class="dot dot-phrase"></span>
+          Contributory Phrases
+          <span class="count">${res.key_phrases.length}</span>
+        </div>
+        <div class="phrase-list">
+          ${res.key_phrases.map(p => `<span class="phrase-chip">${esc(p)}</span>`).join('')}
+          ${!res.key_phrases.length ? '<span style="color:var(--text3);font-size:.8rem">No phrases extracted</span>' : ''}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Update abstract viewer with highlights for this aspect
+  renderAbstract(res.sentence_indices, res.key_phrases);
+}
+
+/* ========================================================================= */
+/*  UTILITIES                                                                 */
+/* ========================================================================= */
+function splitSentences(text) {
+  // Simple sentence splitting; backend does the real work
+  return text.match(/[^.!?]+[.!?]+[\s"]*/g)?.map(s => s.trim()).filter(Boolean) || [text];
+}
+
+function esc(s) {
+  const el = document.createElement('span');
+  el.textContent = s;
+  return el.innerHTML;
+}
+
+function highlightInText(html, phrases) {
+  for (const p of [...phrases].sort((a,b) => b.length - a.length)) {
+    const escaped = p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`(${escaped})`, 'gi');
+    html = html.replace(re, '<span class="phrase-hl">$1</span>');
+  }
+  return html;
+}
+
+/* ========================================================================= */
+/*  PROGRESS OVERLAY                                                          */
+/* ========================================================================= */
+function showProgress(title, subtitle) {
+  document.getElementById('progress-title').textContent = title;
+  document.getElementById('progress-subtitle').textContent = subtitle;
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('progress-label').textContent = 'Preparing…';
+  document.getElementById('progress-overlay').classList.add('active');
+}
+function setProgress(pct, label) {
+  document.getElementById('progress-fill').style.width = pct + '%';
+  if (label) document.getElementById('progress-label').textContent = label;
+}
+function hideProgress() {
+  document.getElementById('progress-overlay').classList.remove('active');
+}
+
+/* ========================================================================= */
+/*  TOAST                                                                     */
+/* ========================================================================= */
+function showToast(msg, type) {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `${type === 'error' ? '✕' : '✓'} ${esc(msg)}`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 4000);
+}
+</script>
+</body>
+</html>
