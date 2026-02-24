@@ -93,7 +93,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);
 .toolbar-tab .ico{font-size:1rem}
 .toolbar-right{margin-left:auto;display:flex;align-items:center;padding-right:.5rem;gap:.4rem}
 .toolbar-btn{
-  padding:6px 14px;font-size:.78rem;font-weight:600;border-radius:var(--radius-sm);
+  padding:6px 5px;font-size:.78rem;font-weight:600;border-radius:5px;
   border:1px solid var(--border);background:var(--surface);color:var(--text);
   cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:5px;
 }
@@ -218,12 +218,22 @@ select{cursor:pointer;appearance:none;
 .article-meta{font-size:.7rem;color:var(--text3);display:flex;gap:.6rem;flex-wrap:wrap}
 .article-meta span{display:flex;align-items:center;gap:3px}
 
+
+.articles-placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  min-height:500px;text-align:center;padding:3rem;padding-top:3%;color:var(--text3);
+}
+.articles-placeholder .icon{font-size:3.5rem;margin-bottom:1rem;opacity:.4}
+.articles-placeholder h3{font-size:1.1rem;font-weight:700;color:var(--text2);margin-bottom:.5rem}
+.articles-placeholder p{font-size:.85rem;max-width:380px;line-height:1.6}
+
+
 /* ========================================================================= */
 /*  RESULTS AREA                                                              */
 /* ========================================================================= */
 .results-placeholder{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:500px;text-align:center;padding:3rem;color:var(--text3);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  min-height:500px;text-align:center;padding:3rem;padding-top:8%;color:var(--text3);
 }
 .results-placeholder .icon{font-size:3.5rem;margin-bottom:1rem;opacity:.4}
 .results-placeholder h3{font-size:1.1rem;font-weight:700;color:var(--text2);margin-bottom:.5rem}
@@ -244,14 +254,14 @@ select{cursor:pointer;appearance:none;
 
 /* Result blocks */
 .result-block {
-  padding: 1.5rem;
-  padding-top: 10px;
+  padding: 0.75rem 1.5rem;
   transition: var(--transition);
 }
-.result-block:hover {
-  background: var(--surface2);
+
+.result-section {
+  margin-bottom: 0.4rem;
 }
-.result-section{margin-bottom:1.5rem}
+.result-section{margin-bottom:0.5rem}
 .result-section:last-child{margin-bottom:0}
 .section-label{
   font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
@@ -763,13 +773,15 @@ select{cursor:pointer;appearance:none;
 
 /* Evaluation right column */
 /* .eval-col{position:sticky;top:12px} */
+
 .eval-placeholder{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:2.5rem 1.5rem;text-align:center;color:var(--text3);min-height:200px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  min-height:500px;text-align:center;padding:3rem;padding-top:8%;color:var(--text3);
 }
-.eval-placeholder .ep-icon{font-size:2.2rem;margin-bottom:.7rem;opacity:.35}
-.eval-placeholder h3{font-size:.88rem;font-weight:700;color:var(--text2);margin-bottom:.3rem}
-.eval-placeholder p{font-size:.78rem;line-height:1.5;max-width:260px}
+.eval-placeholder .icon{font-size:3.5rem;margin-bottom:1rem;opacity:.4}
+.eval-placeholder h3{font-size:1.1rem;font-weight:700;color:var(--text2);margin-bottom:.5rem}
+.eval-placeholder p{font-size:.85rem;max-width:380px;line-height:1.6}
+
 .eval-aspect-label{
   font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
   color:var(--text3);padding:.7rem 1.1rem;border-bottom:1px solid var(--border);
@@ -999,6 +1011,12 @@ select{cursor:pointer;appearance:none;
             <span class="count" id="article-count">0</span>
           </div>
           <div class="panel-body flush">
+            <!-- Placeholder -->
+            <div class="articles-placeholder" id="articles-placeholder">
+              <div class="icon">📰</div>
+              <h3>No Articles Yet</h3>
+              <p>In Step 1, please select a document input method. Supported options include keyword search, PMID search, PMC search, manual file upload, and manual text input.</p>
+            </div>
             <div class="article-list" id="article-list"></div>
           </div>
         </div>
@@ -1074,12 +1092,28 @@ select{cursor:pointer;appearance:none;
     <div class="eval-col" style="height:100%">
       <div class="panel" id="eval-panel" style="height:100%">
         <div class="panel-header">
-          <h2>Evaluation</h2>
+          <h2>Self-Evaluation Results</h2>
           <span class="count" id="eval-panel-badge">ECR / SSR / CPR</span>
         </div>
+
+        <!-- eval background progress -->
+        <div id="eval-bg-progress" style="display:none;padding:.5rem 1.1rem;border-bottom:1px solid var(--border);background:var(--surface2)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+            <span style="font-size:.7rem;font-weight:600;color:var(--text2)">Auto-evaluating…</span>
+            <span id="eval-bg-label" style="font-size:.7rem;color:var(--text3)">0 / 0</span>
+          </div>
+          <div style="height:4px;border-radius:2px;background:var(--border);overflow:hidden">
+            <div id="eval-bg-fill" style="height:100%;border-radius:2px;width:0%;
+              background:linear-gradient(90deg,var(--primary),var(--accent));
+              transition:width .4s ease"></div>
+          </div>
+        </div>
+
+
+
         <!-- placeholder when no results -->
         <div class="eval-placeholder" id="eval-placeholder">
-          <div class="ep-icon">&#128202;</div>
+          <div class="icon">&#128202;</div>
           <h3>No Results Yet</h3>
           <p>Run the PCoA pipeline first, then evaluate each aspect's summary quality here.</p>
         </div>
@@ -1087,12 +1121,6 @@ select{cursor:pointer;appearance:none;
         <div id="eval-content" style="display:none">
           <div class="eval-aspect-label" id="eval-aspect-label"></div>
           <div class="eval-panel-body" id="eval-panel-body"></div>
-          <div class="eval-all-wrap">
-            <button class="eval-all-btn" id="eval-all-btn" onclick="runAllEvaluations()">
-              <span class="eval-spinner"></span>
-              <span class="eval-btn-label">Evaluate All Aspects</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -1166,6 +1194,7 @@ let state = {
   analysis: null,
   activeResultTab: 0,
   evaluations: {},
+  userHoveredEval: false,
 };
 
 /* ========================================================================= */
@@ -1288,6 +1317,9 @@ async function doSearch() {
     state.articles = articles;
     state.selectedArticle = null;
     state.analysis = null;
+
+    
+
     hideProgress();
     renderArticleList();
     showToast(`Found ${articles.length} articles`, 'success');
@@ -1402,6 +1434,10 @@ async function doUploadPDF() {
 function renderArticleList() {
   const panel = document.getElementById('article-panel');
   const list = document.getElementById('article-list');
+
+  const placeholder = document.getElementById('articles-placeholder');
+  placeholder.style.display = 'none';
+  
   document.getElementById('article-count').textContent = state.articles.length;
   if (!state.articles.length) { panel.style.display = 'none'; return; }
   panel.style.display = '';
@@ -1422,6 +1458,7 @@ function selectArticle(idx) {
   state.selectedArticle = state.articles[idx];
   state.analysis = null;
   state.evaluations = {};
+  document.getElementById('eval-bg-progress').style.display = 'none';
   renderArticleList();
   showSelectedBar();
 
@@ -1442,7 +1479,7 @@ function selectArticle(idx) {
   renderAbstract();
 
   document.getElementById('results-content').style.display = 'none';
-  document.getElementById('results-placeholder').style.display = '';
+  document.getElementById('results-placeholder').style.display = 'none';
   document.getElementById('eval-placeholder').style.display = '';
   document.getElementById('eval-content').style.display = 'none';
 }
@@ -1537,7 +1574,7 @@ function renderAbstract(highlightIndices, highlightPhrases) {
     });
   }
 
-  
+
   // Collapsible logic
   const collapseBtn = document.getElementById('abstract-collapse-btn');
   const shouldCollapse = isFulltext && sents.length > 20;
@@ -1574,18 +1611,54 @@ function toggleAbstractCollapse() {
 async function runPipeline() {
   const a = state.selectedArticle;
   if (!a) return showToast('Select an article first', 'error');
+
   const aspects = [...state.selectedAspects];
   if (!aspects.length) return showToast('Select at least one aspect', 'error');
+
   state.evaluations = {};
+  state.userHoveredEval = false;
+  document.getElementById('eval-bg-progress').style.display = 'none';
+
   const btn = document.getElementById('run-btn');
   btn.disabled = true;
-  showProgress('Summarizing and Attributing',
-    `Analyzing ${aspects.length} aspect${aspects.length>1?'s':''} with ${state.strategy} attribution…`);
-  setProgress(10, 'Sending request to GPT-4o…');
+
+  // ── 1. 检查缓存 ──────────────────────────────────────────
+  const cached = {};
+  const missing = [];
+
+  for (const code of aspects) {
+    const key = summaryKey(a.pmid, state.strategy, code);
+    if (!key) { missing.push(code); continue; }
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) cached[code] = JSON.parse(raw);
+      else missing.push(code);
+    } catch(_) {
+      missing.push(code);
+    }
+  }
+
+  // ── 2. 全部命中 → 直接渲染 ───────────────────────────────
+  if (missing.length === 0) {
+    state.pipelineTime = null;
+    showToast(`Loaded ${aspects.length} aspects from cache`, 'success');
+    state.analysis = buildAnalysisFromCache(a, aspects, cached);
+    btn.disabled = false;
+    renderResults();
+    runAllEvaluationsBackground();
+    return;
+  }
+
+  // ── 3. 部分命中 → 只请求缺失的 ──────────────────────────
+  const cacheHits = aspects.length - missing.length;
+  showProgress(
+    'Summarizing and Attributing',
+    `${cacheHits > 0 ? `${cacheHits} cached, ` : ''}requesting ${missing.length} aspect${missing.length > 1 ? 's' : ''}…`
+  );
+  setProgress(10, 'Sending request…');
 
   const t0 = performance.now();
   try {
-    // simulate gradual progress + live timer
     const progressTimer = setInterval(() => {
       const cur = parseFloat(document.getElementById('progress-fill').style.width) || 10;
       const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
@@ -1594,18 +1667,36 @@ async function runPipeline() {
 
     const result = await api('/api/analyze', {
       pmid: a.pmid, title: a.title, abstract: a.abstract,
-      aspects, strategy: state.strategy,
+      aspects: missing, strategy: state.strategy,
     });
     clearInterval(progressTimer);
+
+    // ── 4. 写入缓存 ──────────────────────────────────────────
+    for (const res of result.results) {
+      if (!res.error) {
+        const key = summaryKey(a.pmid, state.strategy, res.aspect_code);
+        if (key) {
+          try { localStorage.setItem(key, JSON.stringify(res)); } catch(_) {}
+        }
+        cached[res.aspect_code] = res;
+      }
+    }
+
     const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
     setProgress(100, `Done in ${elapsed}s`);
-    state.analysis = result;
+    state.analysis = buildAnalysisFromCache(a, aspects, cached);
     state.pipelineTime = elapsed;
+
     setTimeout(() => {
       hideProgress();
       renderResults();
-    }, 400);
-    showToast(`Pipeline complete in ${elapsed}s`, 'success');
+      runAllEvaluationsBackground();
+    }, 300);
+
+    const msg = cacheHits > 0
+      ? `${cacheHits} from cache + ${missing.length} new in ${elapsed}s`
+      : `Pipeline complete in ${elapsed}s`;
+    showToast(msg, 'success');
   } catch (e) {
     hideProgress();
     showToast(e.message, 'error');
@@ -1614,6 +1705,37 @@ async function runPipeline() {
   }
 }
 
+function summaryKey(pmid, strategy, aspectCode) {
+  if (pmid === 'custom') return null; // paste 模式不缓存
+  return `summary_${pmid}_${strategy}_${aspectCode}`;
+}
+
+function evalKey(pmid, strategy, aspectCode) {
+  if (pmid === 'custom') return null;
+  return `eval_${pmid}_${strategy}_${aspectCode}`;
+}
+
+// 按用户选择的 aspect 顺序，从缓存对象拼装 analysis 结构
+function buildAnalysisFromCache(article, aspects, cached) {
+  const results = aspects.map(code => {
+    if (cached[code]) return cached[code];
+    return {
+      aspect_code: code, aspect_name: code,
+      error: 'Not available', summary: '',
+      cited_sentences: [], key_phrases: [], sentence_indices: []
+    };
+  });
+  // 从任意一个缓存结果里恢复 sentences（prior 策略会带这个字段）
+  const anySentences = Object.values(cached).find(r => r.sentences?.length)?.sentences || [];
+  return {
+    pmid: article.pmid,
+    strategy: state.strategy,
+    results,
+    sentences: anySentences,
+  };
+}
+
+
 /* ========================================================================= */
 /*  RENDER RESULTS                                                            */
 /* ========================================================================= */
@@ -1621,7 +1743,6 @@ function renderResults() {
   const r = state.analysis;
   if (!r || !r.results.length) return;
 
-  // 把 abstract-panel 从预览槽归位到 results-content 末尾，切回浮动
   const panel = document.getElementById('abstract-panel');
   const resultsContent = document.getElementById('results-content');
   resultsContent.appendChild(panel);
@@ -1635,31 +1756,25 @@ function renderResults() {
     'intrinsic': 'Intrinsic Context Attribution',
     'post-hoc': 'Post-Hoc Context Attribution',
   };
+
   const timeStr = state.pipelineTime ? `&nbsp;&middot;&nbsp; <strong>Time:</strong>&nbsp; ${state.pipelineTime}s` : '';
   document.getElementById('results-strategy-bar').innerHTML =
     `<strong>Strategy:</strong>&nbsp; ${strategyLabels[r.strategy] || r.strategy}
      &nbsp;&middot;&nbsp; <strong>Model:</strong>&nbsp; GPT-4o
      &nbsp;&middot;&nbsp; <strong>Aspects:</strong>&nbsp; ${r.results.length}${timeStr}`;
 
-  // Tabs
-  /*
-  const tabs = document.getElementById('result-tabs');
-  tabs.innerHTML = r.results.map((res, i) => `
-    <button class="aspect-tab${i===0?' active':''}" onclick="switchResultTab(${i})">
-      ${res.aspect_code}: ${res.aspect_name}
-    </button>
-  `).join('');
-  */
-
-  // Panels
   const panels = document.getElementById('result-panels');
   panels.innerHTML = r.results.map((res, i) => buildResultPanelHTML(res, i)).join('');
 
-  // Initialize eval panel for first aspect
   renderAbstract(r.results[0].sentence_indices, r.results[0].key_phrases);
-  renderEvalPanel(0);
+
+  // 默认不自动触发 eval，等用户点击按钮
+  document.getElementById('eval-placeholder').style.display = '';
+  document.getElementById('eval-content').style.display = 'none';
+
   state.activeResultTab = 0;
 }
+
 
 function buildResultPanelHTML(res, idx) {
   if (res.error) {
@@ -1670,7 +1785,7 @@ function buildResultPanelHTML(res, idx) {
   return `
     <div class="result-block" style="border-bottom:1px solid var(--border);cursor:default"
          data-result-idx="${idx}" onmouseenter="onResultHover(${idx})">
-      <div class="section-label" style="margin-bottom:.4rem">
+      <div class="section-label" style="margin-bottom:.25rem">
         <span style="background:var(--primary);color:#fff; padding:2px 9px;border-radius:6px;
           font-size:.72rem;font-weight:700;letter-spacing:.04em">${res.aspect_code}</span>
         <span style="font-size:.82rem;font-weight:700;color:var(--text)">${res.aspect_name}</span>
@@ -1681,15 +1796,167 @@ function buildResultPanelHTML(res, idx) {
           ${res.cited_sentences.map(s => `<span class="s-idx">${s.index}</span>`).join('')}
         </div>
       </div>
+      <div style="margin-top:.1rem;margin-bottom:.1rem">
+        <button class="toolbar-btn" id="eval-btn-${idx}"
+                style="font-size:.72rem;padding:3px 10px;color:var(--text3);border-color:var(--border)"
+                disabled>
+          ⏳ Evaluating …
+        </button>
+      </div>
+
+
+      </div>
     </div>
   `;
 }
 
+
 function onResultHover(idx) {
+  state.userHoveredEval = true;
   const res = state.analysis && state.analysis.results[idx];
-  if (!res) return;
+  if (!res || !res.summary || res.error) return;
+
+  // 更新 abstract 高亮
   renderAbstract(res.sentence_indices, res.key_phrases);
+
+  // 先查内存缓存，再查 localStorage
+  if (!state.evaluations[idx]) {
+    const cacheKey = evalKey(state.selectedArticle.pmid, state.strategy, res.aspect_code);
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) state.evaluations[idx] = JSON.parse(cached);
+    } catch(_) {}
+  }
+
+  state.activeResultTab = idx;
+
+  // 更新右侧面板标题
+  const placeholder = document.getElementById('eval-placeholder');
+  const content = document.getElementById('eval-content');
+  const label = document.getElementById('eval-aspect-label');
+  placeholder.style.display = 'none';
+  content.style.display = '';
+  label.textContent = `${res.aspect_code}: ${res.aspect_name}`;
+
+  if (state.evaluations[idx]) {
+    // 命中缓存或 pending — 统一走 renderEvalPanel
+    renderEvalPanel(idx);
+  } else {
+    // 没有缓存 — 标记 pending，让 renderEvalPanel 显示 loading
+    state.evaluations[idx] = '__pending__';
+    renderEvalPanel(idx);
+
+    api('/api/evaluate', {
+      summary: res.summary,
+      sentences: res.cited_sentences.map(s => ({id: String(s.index), text: s.text})),
+      kps: res.key_phrases,
+    }).then(data => {
+      state.evaluations[idx] = data;
+      const cacheKey = evalKey(state.selectedArticle.pmid, state.strategy, res.aspect_code);
+      try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch(_) {}
+      if (state.activeResultTab === idx) renderEvalPanel(idx);
+      const btn = document.getElementById(`eval-btn-${idx}`);
+      if (btn) { btn.disabled = false; btn.innerHTML = `✅ Done`; }
+    }).catch(e => {
+      state.evaluations[idx] = null;
+      if (state.activeResultTab === idx) {
+        document.getElementById('eval-panel-body').innerHTML =
+          `<div style="text-align:center;padding:1rem;color:var(--red);font-size:.8rem">
+            Evaluation failed — ${esc(e.message)}</div>`;
+      }
+    });
+  }
 }
+
+
+
+async function runAllEvaluationsBackground() {
+  const results = state.analysis?.results;
+  if (!results?.length) return;
+
+  const total = results.filter(r => r.summary && !r.error).length;
+  let done = 0;
+  showEvalProgress(done, total);
+
+  for (let i = 0; i < results.length; i++) {
+    const res = results[i];
+    if (!res.summary || res.error) continue;
+
+    // 检查内存缓存
+    if (!state.evaluations[i]) {
+      const cacheKey = evalKey(state.selectedArticle.pmid, state.strategy, res.aspect_code);
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) state.evaluations[i] = JSON.parse(cached);
+      } catch(_) {}
+    }
+
+    // 已有缓存跳过，按钮显示 done
+    if (state.evaluations[i]) {
+      done++;
+      showEvalProgress(done, total);
+      const cachedBtn = document.getElementById(`eval-btn-${i}`);
+      if (cachedBtn) cachedBtn.innerHTML = '✅ Done';
+      continue;
+    }
+
+    // 标记 pending，按钮显示 evaluating
+    state.evaluations[i] = '__pending__';
+    const pendingBtn = document.getElementById(`eval-btn-${i}`);
+    if (pendingBtn) pendingBtn.innerHTML = '⏳ Evaluating…';
+
+    try {
+      const data = await api('/api/evaluate', {
+        summary: res.summary,
+        sentences: res.cited_sentences.map(s => ({id: String(s.index), text: s.text})),
+        kps: res.key_phrases,
+      });
+      state.evaluations[i] = data;
+      const cacheKey = evalKey(state.selectedArticle.pmid, state.strategy, res.aspect_code);
+      try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch(_) {}
+
+      const btn = document.getElementById(`eval-btn-${i}`);
+      if (btn) btn.innerHTML = '✅ Done';
+
+      if (state.activeResultTab === i) renderEvalPanel(i);
+    } catch(_) {
+      state.evaluations[i] = null;
+      const btn = document.getElementById(`eval-btn-${i}`);
+      if (btn) btn.innerHTML = '⚠️ Failed';
+    }
+
+    done++;
+    showEvalProgress(done, total);
+  }
+
+  showEvalProgress(total, total);
+  document.querySelector('#eval-bg-progress span:first-child').textContent = 'Auto-evaluation complete';
+
+  if (!state.userHoveredEval) {
+    const firstValid = state.analysis.results.findIndex(r => r.summary && !r.error);
+    if (firstValid !== -1 && state.evaluations[firstValid] && state.evaluations[firstValid] !== '__pending__') {
+      state.activeResultTab = firstValid;
+      renderEvalPanel(firstValid);
+    }
+  }
+}
+
+
+function showEvalProgress(done, total) {
+  const bar = document.getElementById('eval-bg-progress');
+  const fill = document.getElementById('eval-bg-fill');
+  const label = document.getElementById('eval-bg-label');
+  bar.style.display = '';
+  label.textContent = `${done} / ${total}`;
+  fill.style.width = (total > 0 ? (done / total) * 100 : 0) + '%';
+}
+
+function hideEvalProgress() {
+  const bar = document.getElementById('eval-bg-progress');
+  // 短暂延迟后淡出
+  setTimeout(() => { bar.style.display = 'none'; }, 800);
+}
+
 
 
 function switchResultTab(idx) {
@@ -1728,23 +1995,27 @@ function renderEvalPanel(idx) {
   const res = state.analysis.results[idx];
   label.textContent = `${res.aspect_code}: ${res.aspect_name}`;
 
-  if (state.evaluations[idx]) {
-    body.innerHTML = renderEvalResults(idx, state.evaluations[idx]);
-    requestAnimationFrame(() => animateEvalMetrics(idx, state.evaluations[idx]));
+  const evalData = state.evaluations[idx];
+
+  if (evalData && evalData !== '__pending__') {
+    body.innerHTML = renderEvalResults(idx, evalData);
+    requestAnimationFrame(() => animateEvalMetrics(idx, evalData));
+  } else if (evalData === '__pending__') {
+    body.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;padding:2rem;gap:.8rem;color:var(--text3)">
+      <div class="spinner" style="width:22px;height:22px;border-width:2px;margin:0"></div>
+      <span style="font-size:.8rem">Evaluating…</span>
+    </div>`;
   } else if (!res.summary || res.error) {
     body.innerHTML = `<div style="text-align:center;padding:1rem;color:var(--text3);font-size:.8rem">
       No summary available for evaluation.</div>`;
   } else {
-    body.innerHTML = renderEvalButton(idx);
+    body.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text3);font-size:.8rem">
+      Hover over a summary to evaluate.</div>`;
   }
 }
 
-function renderEvalButton(idx) {
-  return `<button class="eval-btn" id="eval-btn-${idx}" onclick="runEvaluation(${idx})" style="width:100%">
-    <span class="eval-spinner"></span>
-    <span class="eval-btn-label">Evaluate This Aspect</span>
-  </button>`;
-}
+
 
 function renderEvalResults(idx, data) {
   const res = state.analysis.results[idx];
@@ -2015,8 +2286,27 @@ async function runEvaluation(idx) {
     showToast('Cannot evaluate — no summary for this aspect', 'error');
     return;
   }
+
   const btn = document.getElementById(`eval-btn-${idx}`);
-  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border-width:2px;margin:0;display:inline-block"></span> Evaluating…`;
+  }
+
+  state.activeResultTab = idx;
+  const placeholder = document.getElementById('eval-placeholder');
+  const content = document.getElementById('eval-content');
+  const body = document.getElementById('eval-panel-body');
+  const label = document.getElementById('eval-aspect-label');
+
+  placeholder.style.display = 'none';
+  content.style.display = '';
+  label.textContent = `${res.aspect_code}: ${res.aspect_name}`;
+  body.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;padding:2rem;gap:.8rem;color:var(--text3)">
+      <div class="spinner" style="width:22px;height:22px;border-width:2px;margin:0"></div>
+      <span style="font-size:.8rem">Evaluating…</span>
+    </div>`;
 
   try {
     const data = await api('/api/evaluate', {
@@ -2025,15 +2315,23 @@ async function runEvaluation(idx) {
       kps: res.key_phrases,
     });
     state.evaluations[idx] = data;
-    // Re-render if this is still the active tab
-    if (state.activeResultTab === idx) {
-      renderEvalPanel(idx);
-    }
+
+    // 存入 localStorage，key 用 pmid + aspect_code 保证唯一性
+    const cacheKey = evalKey(state.selectedArticle.pmid, state.strategy, res.aspect_code);
+    try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch(_) {}
+
+    renderEvalPanel(idx);
+    if (btn) { btn.disabled = false; btn.innerHTML = `✅ Done`; }
   } catch (e) {
-    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+    body.innerHTML = `<div style="text-align:center;padding:1rem;color:var(--red);font-size:.8rem">
+      Evaluation failed — ${esc(e.message)}</div>`;
     showToast('Eval service temporarily unavailable — try again', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = `Self-Evaluate`; }
   }
 }
+
+
+
 
 async function runAllEvaluations() {
   if (!state.analysis || !state.analysis.results.length) return;
