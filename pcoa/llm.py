@@ -4,7 +4,6 @@ Supports OpenAI, Anthropic, and xAI (OpenAI-compatible) providers.
 """
 
 import json
-import os
 import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
@@ -12,7 +11,7 @@ from typing import List, Optional, Tuple
 import anthropic
 from openai import OpenAI
 
-from pcoa.config import OPENAI_API_KEY, OPENAI_MODEL, TEMPERATURE
+from pcoa.config import OPENAI_MODEL, TEMPERATURE
 
 # Model registry: UI name -> (provider, model_id, base_url)
 MODEL_REGISTRY = {
@@ -38,19 +37,22 @@ def call_llm(prompt: str, model: str = "", temperature: float = TEMPERATURE, api
 
     Args:
         prompt: The prompt string
-        model: UI model name (e.g. "GPT-5.2") or raw model ID for backward compat
+        model: UI model name (e.g. "GPT-5.2") or raw OpenAI-compatible model ID
         temperature: Sampling temperature (default: 0.7, as in paper §5.1)
-        api_key: User-provided API key (falls back to env vars if empty)
+        api_key: User-provided API key (required)
 
     Returns:
         Raw response text from the model
     """
+    if not api_key:
+        raise ValueError("Please enter your API key before running the analysis.")
+
     registry_entry = MODEL_REGISTRY.get(model)
 
     if registry_entry:
         provider, model_id, base_url = registry_entry
     else:
-        # Backward compat: treat as raw OpenAI model ID
+        # Custom model name: treat as raw OpenAI-compatible model ID
         provider = "openai"
         model_id = model if model else OPENAI_MODEL
         base_url = None
@@ -62,33 +64,36 @@ def call_llm(prompt: str, model: str = "", temperature: float = TEMPERATURE, api
 
 
 def _call_openai(prompt: str, model_id: str, temperature: float, api_key: str, base_url: Optional[str]) -> str:
-    key = api_key or OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
-    if not key:
-        raise ValueError("No API key provided. Enter your OpenAI API key or set OPENAI_API_KEY in .env")
-    kwargs = {"api_key": key}
+    kwargs = {"api_key": api_key}
     if base_url:
         kwargs["base_url"] = base_url
     client = OpenAI(**kwargs)
-    response = client.chat.completions.create(
-        model=model_id,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=temperature,
-        max_tokens=2048,
-    )
+    try:
+        response = client.chat.completions.create(
+            model=model_id,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=temperature,
+            max_tokens=2048,
+        )
+    except Exception as e:
+        msg = str(e)
+        if "401" in msg or "auth" in msg.lower() or "invalid" in msg.lower():
+            raise ValueError(f"API key rejected by OpenAI: {msg}") from e
+        raise
     return response.choices[0].message.content.strip()
 
 
 def _call_anthropic(prompt: str, model_id: str, temperature: float, api_key: str) -> str:
-    key = api_key or os.getenv("ANTHROPIC_API_KEY", "")
-    if not key:
-        raise ValueError("No API key provided. Enter your Anthropic API key or set ANTHROPIC_API_KEY in .env")
-    client = anthropic.Anthropic(api_key=key)
-    response = client.messages.create(
-        model=model_id,
-        max_tokens=2048,
-        temperature=temperature,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    client = anthropic.Anthropic(api_key=api_key)
+    try:
+        response = client.messages.create(
+            model=model_id,
+            max_tokens=2048,
+            temperature=temperature,
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except anthropic.AuthenticationError as e:
+        raise ValueError(f"API key rejected by Anthropic: {e}") from e
     return response.content[0].text.strip()
 
 
