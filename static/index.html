@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>PCoA — Phrase-Level Context Attribution</title>
+<title>Summer — Traceable Medical Aspect-Based Summarization</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -37,7 +37,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);
 /* ========================================================================= */
 /*  LAYOUT                                                                    */
 /* ========================================================================= */
-.container{max-width:1680px;margin:0 auto;padding:0 2rem}
+.container{max-width:1680px;margin:0 auto;padding:0 1rem;margin-bottom: 10px;}
 @media(max-width:768px){.container{padding:0 1rem}}
 
 /* ========================================================================= */
@@ -105,20 +105,28 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);
 /* ========================================================================= */
 /*  MAIN GRID                                                                 */
 /* ========================================================================= */
-.main{padding:1.5rem 0 4rem}
+.main{padding:1.5rem 1.5rem 4rem}
 .grid{display:grid;grid-template-columns:340px 1fr 340px;gap:1.2rem;align-items:start}
 @media(max-width:1200px){.grid{grid-template-columns:340px 1fr}}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+.rows-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+  margin-top: 20px;
+}
 
 /* ========================================================================= */
 /*  PANELS                                                                    */
 /* ========================================================================= */
 .panel{
   background:var(--surface);border:1px solid var(--border);
-  border-radius:var(--radius-lg);overflow:hidden;
+  border-radius:var(--radius);overflow:hidden;
 }
 .panel-header{
-  padding:1rem 1.25rem;border-bottom:1px solid var(--border);
+  padding:0.7rem 1.25rem;border-bottom:1px solid var(--border);
   display:flex;align-items:center;gap:.6rem;
 }
 .panel-header h2{font-size:.85rem;font-weight:700;color:var(--text)}
@@ -144,7 +152,7 @@ input[type="text"],textarea,select{
 }
 input:focus,textarea:focus,select:focus{border-color:var(--primary);
   box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-textarea{resize:vertical;min-height:100px;line-height:1.5}
+textarea{resize:vertical;min-height:80px;line-height:1.5}
 select{cursor:pointer;appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;
@@ -153,12 +161,12 @@ select{cursor:pointer;appearance:none;
 /* ========================================================================= */
 /*  ASPECT CHIPS                                                              */
 /* ========================================================================= */
-.aspect-grid{display:flex;flex-wrap:wrap;gap:6px}
+.aspect-grid{display:flex;flex-wrap:wrap;gap:3px}
 .aspect-chip{
-  padding:5px 12px;border-radius:20px;font-size:.72rem;font-weight:600;
+  padding:5px 6px;border-radius:10px;font-size:.72rem;font-weight:600;
   border:1px solid var(--border);background:var(--surface);color:var(--text2);
   cursor:pointer;transition:var(--transition);user-select:none;
-  display:flex;align-items:center;gap:4px;
+  display:flex;align-items:center;gap:5px;
 }
 .aspect-chip:hover{border-color:var(--primary);color:var(--primary)}
 .aspect-chip.selected{
@@ -175,7 +183,7 @@ select{cursor:pointer;appearance:none;
 /* ========================================================================= */
 .strategy-cards{display:flex;flex-direction:column;gap:.5rem}
 .strategy-card{
-  padding:.75rem 1rem;border:1.5px solid var(--border);border-radius:var(--radius);
+  padding:.50rem 1rem;border:1.5px solid var(--border);border-radius:var(--radius);
   cursor:pointer;transition:var(--transition);position:relative;
 }
 .strategy-card:hover{border-color:var(--primary-dark);background:var(--surface2)}
@@ -196,7 +204,7 @@ select{cursor:pointer;appearance:none;
 /* ========================================================================= */
 /*  ARTICLE LIST                                                              */
 /* ========================================================================= */
-.article-list{max-height:520px;overflow-y:auto}
+.article-list{max-height:800px;overflow-y:auto}
 .article-item{
   padding:.9rem 1.25rem;border-bottom:1px solid var(--border);
   cursor:pointer;transition:var(--transition);
@@ -235,7 +243,14 @@ select{cursor:pointer;appearance:none;
 .aspect-tab.active{color:var(--primary);border-bottom-color:var(--primary);background:var(--surface)}
 
 /* Result blocks */
-.result-block{padding:1.5rem}
+.result-block {
+  padding: 1.5rem;
+  padding-top: 10px;
+  transition: var(--transition);
+}
+.result-block:hover {
+  background: var(--surface2);
+}
 .result-section{margin-bottom:1.5rem}
 .result-section:last-child{margin-bottom:0}
 .section-label{
@@ -251,7 +266,7 @@ select{cursor:pointer;appearance:none;
 .summary-card{
   background:linear-gradient(135deg,#f0f7ff 0%,#eef2ff 100%);
   border:1px solid #c7d7f5;border-radius:var(--radius);
-  padding:1.1rem 1.3rem;font-size:.9rem;line-height:1.75;color:var(--text);
+  padding:0.5rem 0.5rem;font-size:.9rem;line-height:1.5;color:var(--text);
   position:relative;
 }
 .summary-card::before{
@@ -260,16 +275,28 @@ select{cursor:pointer;appearance:none;
 }
 
 /* Sentence list in results */
+/*
 .cited-sentence{
-  padding:.7rem 1rem;border-radius:var(--radius-sm);margin-bottom:.4rem;
+  padding:.1rem 1rem;border-radius:var(--radius-sm); margin-bottom:.4rem;
   border-left:3px solid var(--red);background:var(--red-light);
   font-size:.84rem;line-height:1.65;position:relative;
 }
-.cited-sentence .s-idx{
-  display:inline-flex;align-items:center;justify-content:center;
-  min-width:22px;height:22px;background:var(--red);color:#fff;
-  border-radius:6px;font-size:.68rem;font-weight:700;margin-right:8px;
-  font-family:var(--mono);flex-shrink:0;
+*/
+
+.s-idx {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  background: var(--green);
+  color: #fff;
+  border-radius: 3px;
+  font-size: .68rem;
+  font-weight: 700;
+  font-family: var(--mono);
+  flex-shrink: 0;
+  margin: 0px 2px;
 }
 
 /* Phrase chips */
@@ -285,6 +312,114 @@ select{cursor:pointer;appearance:none;
   padding:0 3px;border-radius:3px;font-weight:500;
   border-bottom:2px solid var(--accent);
 }
+
+/* ========================================================================= */
+/*  Abstract Card                                                            */
+/* ========================================================================= */
+#abstract-panel {
+  position: fixed;
+  bottom: 5vh; 
+  left: 10px;
+  width: calc(25% - 1.5rem);
+  min-width: 250px;
+  min-height: 120px;
+  height: 90vh; 
+  z-index: 500;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  background-color: #f7f8fb;
+  flex-direction: column;
+}
+
+
+#abstract-panel .panel-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* resize handle */
+#abstract-resize-handle {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 16px; height: 16px;
+  cursor: se-resize;
+  z-index: 10;
+}
+#abstract-resize-handle::after {
+  content: '';
+  position: absolute;
+  bottom: 3px; right: 3px;
+  width: 8px; height: 8px;
+  border-right: 2px solid var(--border2);
+  border-bottom: 2px solid var(--border2);
+  border-radius: 1px;
+}
+
+#abstract-panel.inline-mode {
+  position: static;
+  width: 100%;
+  height: auto;
+  min-height: unset;
+  box-shadow: none;
+  border-radius: var(--radius);
+  overflow: visible;
+  display: block;
+}
+
+#abstract-panel.inline-mode #abstract-resize-handle {
+  display: none;
+}
+
+#abstract-panel .panel-header {
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0; 
+  background: var(--surface);
+  z-index: 1;
+}
+
+#abstract-panel.inline-mode .panel-header {
+  cursor: default;
+}
+
+
+.abs-sent {
+  display: inline;
+}
+.abs-sent-hl {
+  display: inline;
+  background: var(--red-light);
+  border-radius: 3px;
+  padding: 1px 3px;
+  box-shadow: inset 2px 0 0 var(--red);
+}
+
+/* 段落模式下的 index badge — 覆盖默认的 block 尺寸 */
+.abs-sent .abs-idx,
+.abs-sent-hl .abs-idx {
+  display: inline-flex;
+  min-width: unset;
+  width: 18px;
+  height: 16px;
+  font-size: .6rem;
+  border-radius: 4px;
+  margin-top: 0;
+  vertical-align: middle;
+  line-height: 1;
+  background: var(--border2);
+  color: var(--text3);
+}
+.abs-sent-hl .abs-idx {
+  background: var(--red);
+  color: #fff;
+}
+
+
 
 /* ========================================================================= */
 /*  SOURCE ABSTRACT VIEWER                                                    */
@@ -361,15 +496,35 @@ select{cursor:pointer;appearance:none;
 /* ========================================================================= */
 /*  TOAST                                                                     */
 /* ========================================================================= */
-.toast-container{position:fixed;top:1rem;right:1rem;z-index:2000;display:flex;flex-direction:column;gap:.5rem}
-.toast{
-  padding:.7rem 1.1rem;border-radius:var(--radius-sm);font-size:.8rem;font-weight:500;
-  box-shadow:var(--shadow-md);animation:slideIn .3s ease;min-width:260px;
-  display:flex;align-items:center;gap:8px;
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.toast {
+  padding: .7rem 1.1rem;
+  border-radius: var(--radius-sm);
+  font-size: .8rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-md);
+  animation: slideIn .3s ease;
+  min-width: 260px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
 }
 .toast-error{background:#fef2f2;color:#991b1b;border:1px solid var(--red-border)}
 .toast-success{background:var(--green-light);color:#065f46;border:1px solid var(--green-border)}
-@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes slideIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 
 /* ========================================================================= */
 /*  SCROLLBAR                                                                 */
@@ -607,7 +762,7 @@ select{cursor:pointer;appearance:none;
 }
 
 /* Evaluation right column */
-.eval-col{position:sticky;top:12px}
+/* .eval-col{position:sticky;top:12px} */
 .eval-placeholder{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:2.5rem 1.5rem;text-align:center;color:var(--text3);min-height:200px;
@@ -647,15 +802,15 @@ select{cursor:pointer;appearance:none;
 <header class="header">
   <div class="container header-inner">
     <div class="header-text">
-      <h1>PCoA: Medical Aspect-Based <span>Summarization</span></h1>
-      <p>Phrase-Level Context Attribution for Randomized Controlled Trial Articles.
-         Retrieve, analyze, and summarize clinical evidence with traceable citations.</p>
+      <h1>Summer: Traceable Medical Aspect-Based <span>Summarization</span></h1>
+      <p>via Phrase-Level Context Attribution.</p>
+      <p><i>Retrieve, analyze, and summarize clinical evidence with traceable citations to help healthcare professionals quickly access trustworthy medical evidence.</i></p>
       <div class="header-badges">
         <span class="badge badge-acl">ACL 2026 Demo</span>
         <span class="badge badge-arxiv">arXiv 2601.03418</span>
       </div>
     </div>
-    <div class="header-logo">PCoA</div>
+    <div class="header-logo">Summer</div>
   </div>
 </header>
 
@@ -663,17 +818,15 @@ select{cursor:pointer;appearance:none;
 <!--  MAIN                                                                   -->
 <!-- ====================================================================== -->
 <div class="container main">
-  <div class="grid">
 
     <!-- ================================================================== -->
-    <!--  LEFT PANEL                                                         -->
+    <!--  First Row                                                         -->
     <!-- ================================================================== -->
-    <div style="display:flex;flex-direction:column;gap:1.2rem">
-
+    <div style="display:flex;flex-direction:row;gap:1rem;align-items:stretch">
       <!-- Input Panel -->
-      <div class="panel">
+      <div class="panel" style="flex:1;overflow:hidden">
         <div class="panel-header">
-          <h2>1 &nbsp;Article Input</h2>
+          <h2>STEP 1: &nbsp;Article Input</h2>
         </div>
         <div class="panel-body">
           <div class="mode-tabs">
@@ -688,14 +841,16 @@ select{cursor:pointer;appearance:none;
           <div id="mode-search">
             <div class="input-group">
               <label>PubMed Query</label>
-              <textarea id="search-query" rows="3">melanoma[MeSH Terms] AND "randomized controlled trial"[Publication Type] AND english[Language]</textarea>
+              <textarea id="search-query" rows="3" style="color: gray;">melanoma[MeSH Terms] AND "randomized controlled trial"[Publication Type] AND english[Language]</textarea>
             </div>
             <div class="input-row">
               <select id="search-max" style="width:auto;min-width:80px">
-                <option value="5">5</option><option value="10" selected>10</option>
-                <option value="20">20</option><option value="50">50</option>
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
               </select>
-              <button class="toolbar-btn primary" style="flex:1" onclick="doSearch()">
+              <button class="toolbar-btn primary" style="flex:1; display:flex; justify-content:center; align-items:center;" onclick="doSearch();">
                 Search PubMed
               </button>
             </div>
@@ -757,8 +912,8 @@ select{cursor:pointer;appearance:none;
       </div>
 
       <!-- Strategy Panel -->
-      <div class="panel">
-        <div class="panel-header"><h2>2 &nbsp;Attribution Strategy</h2></div>
+      <div class="panel" style="flex:1;overflow:hidden">
+        <div class="panel-header"><h2>STEP 2:&nbsp;Attribution Strategy</h2></div>
         <div class="panel-body">
           <div class="strategy-cards">
             <div class="strategy-card selected" data-strategy="prior" onclick="selectStrategy('prior')">
@@ -778,9 +933,9 @@ select{cursor:pointer;appearance:none;
       </div>
 
       <!-- Aspect Panel -->
-      <div class="panel">
+      <div class="panel" style="flex:1;overflow:hidden">
         <div class="panel-header">
-          <h2>3 &nbsp;Medical Aspects</h2>
+          <h2>STEP 3: &nbsp;Medical Aspects</h2>
           <span class="count" id="aspect-count">6 / 16</span>
         </div>
         <div class="panel-body">
@@ -793,42 +948,89 @@ select{cursor:pointer;appearance:none;
         </div>
       </div>
 
-      <!-- Article List -->
-      <div class="panel" id="article-panel" style="display:none">
+      <!-- LLMs Panel -->
+      <div class="panel" style="flex:1;overflow:hidden">
         <div class="panel-header">
-          <h2>Articles</h2>
-          <span class="count" id="article-count">0</span>
+          <h2>STEP 4: &nbsp;LLM Selection</h2>
         </div>
-        <div class="panel-body flush">
-          <div class="article-list" id="article-list"></div>
+
+        <div class="panel-body">
+          <!-- LLM -->
+          <div id="llm-selection">
+            <div class="input-row">
+              <select id="model_name" style="width:auto;min-width:100%">
+                <option value="GPT-5.1">GPT-5.1</option>
+                <option value="GPT-5.2" selected>GPT-5.2</option>
+                <option value="Opus-4.6">Opus-4.6</option>
+                <option value="Grok-4.1">Grok-4.1</option>
+              </select>
+            </div>
+
+            <div class="input-group" style="margin-top:10px;">
+              <label>API KEY</label>
+              <input type="text" id="api-key"
+                    style="color:gray;-webkit-text-security:disc;font-family:text-security-disc"
+                    placeholder="Please copy your API KEY here."/>
+            </div>
+          </div>
         </div>
+
+        
+        
       </div>
+
+    </div>
+
+
+
+  <!-- ================================================================== -->
+  <!--  Second Row                                                        -->
+  <!-- ================================================================== -->
+  <div class="rows-grid">
+
+    <!-- ================================================================== -->
+    <!--  LEFT PANEL                                                        -->
+    <!-- ================================================================== -->
+    <div style="display:flex;flex-direction:column;gap:1.2rem;height:100%">
+        <!-- Article List -->
+        <div class="panel" id="article-panel" style="flex:1;height:100%">
+          <div class="panel-header">
+            <h2>Articles</h2>
+            <span class="count" id="article-count">0</span>
+          </div>
+          <div class="panel-body flush">
+            <div class="article-list" id="article-list"></div>
+          </div>
+        </div>
     </div>
 
     <!-- ================================================================== -->
-    <!--  RIGHT PANEL — RESULTS                                              -->
+    <!--  Middle PANEL — RESULTS                                            -->
     <!-- ================================================================== -->
-    <div>
-      <!-- Selected article info bar -->
-      <div class="panel" id="selected-bar" style="display:none;margin-bottom:1.2rem">
-        <div class="panel-body" style="padding:.8rem 1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-          <div style="flex:1;min-width:200px">
-            <div style="font-size:.82rem;font-weight:700;color:var(--text)" id="sel-title"></div>
-            <div style="font-size:.7rem;color:var(--text3)" id="sel-meta"></div>
-            <div style="display:flex;gap:.4rem;margin-top:.3rem;flex-wrap:wrap" id="sel-fulltext-badge"></div>
-          </div>
-          <button class="toolbar-btn primary" id="run-btn" onclick="runPipeline()">
-            ▶ &nbsp;Run PCoA Pipeline
-          </button>
-        </div>
-      </div>
-
+    <div style="grid-column:span 2;display:flex;flex-direction:column;gap:1.2rem;height:100%">
       <!-- Results panel -->
-      <div class="panel" id="results-panel">
+      <div class="panel" id="results-panel"  style="height:100%">
+        <!-- Selected article info bar -->
+        <div class="" id="selected-bar" style="display:none;margin-bottom:1.2rem">
+          <div class="panel-body" style="padding:.8rem 1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+              <div style="font-size:.82rem;font-weight:700;color:var(--text)" id="sel-title"></div>
+              <div style="font-size:.7rem;color:var(--text3)" id="sel-meta"></div>
+              <div style="display:flex;gap:.4rem;margin-top:.3rem;flex-wrap:wrap" id="sel-fulltext-badge"></div>
+            </div>
+            <button class="toolbar-btn primary" id="run-btn" onclick="runPipeline()">
+              ▶ &nbsp;Summarize
+            </button>
+          </div>
+          <!-- abstract preview -->
+          <div id="abstract-preview-slot"></div>
+        </div>
+
+
         <!-- Placeholder -->
         <div class="results-placeholder" id="results-placeholder">
           <div class="icon">🔬</div>
-          <h3>PCoA Pipeline</h3>
+          <h3>Summarization and Attribution</h3>
           <p>Search PubMed for an RCT article, select medical aspects and an
              attribution strategy, then run the pipeline to generate
              aspect-based summaries with traceable citations.</p>
@@ -839,27 +1041,38 @@ select{cursor:pointer;appearance:none;
           <div class="strategy-info-bar" id="results-strategy-bar"></div>
           <div class="aspect-tabs" id="result-tabs"></div>
           <div id="result-panels"></div>
+
+          <!-- Source abstract panel -->
+          <div id="abstract-panel" style="display:none;margin-top:1.2rem">
+            <div class="panel-header">
+              <h2 id="abstract-panel-title">Source Abstract</h2>
+              <span class="count" id="sent-count">0 sentences</span>
+              <button class="collapse-toggle hidden" id="abstract-collapse-btn" onclick="toggleAbstractCollapse()"></button>
+              <button id="abstract-close-btn" onclick="closeAbstractPanel()"
+                style="margin-left:auto;width:24px;height:24px;border:none;background:var(--surface2);
+                      border-radius:6px;cursor:pointer;font-size:.85rem;color:var(--text2);
+                      display:flex;align-items:center;justify-content:center;flex-shrink:0;
+                      transition:var(--transition);"
+                title="Close floating panel">✕</button>
+            </div>
+            <div class="panel-body flush">
+              <div class="abstract-viewer" id="abstract-viewer"></div>
+            </div>
+            <div id="abstract-resize-handle"></div>
+          </div>
+
+          
         </div>
       </div>
 
-      <!-- Source abstract panel -->
-      <div class="panel" id="abstract-panel" style="display:none;margin-top:1.2rem">
-        <div class="panel-header">
-          <h2 id="abstract-panel-title">Source Abstract</h2>
-          <span class="count" id="sent-count">0 sentences</span>
-          <button class="collapse-toggle hidden" id="abstract-collapse-btn" onclick="toggleAbstractCollapse()"></button>
-        </div>
-        <div class="panel-body flush">
-          <div class="abstract-viewer" id="abstract-viewer"></div>
-        </div>
-      </div>
+      
     </div>
 
     <!-- ================================================================== -->
     <!--  RIGHT PANEL — EVALUATION                                           -->
     <!-- ================================================================== -->
-    <div class="eval-col">
-      <div class="panel" id="eval-panel">
+    <div class="eval-col" style="height:100%">
+      <div class="panel" id="eval-panel" style="height:100%">
         <div class="panel-header">
           <h2>Evaluation</h2>
           <span class="count" id="eval-panel-badge">ECR / SSR / CPR</span>
@@ -883,6 +1096,7 @@ select{cursor:pointer;appearance:none;
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -892,7 +1106,7 @@ select{cursor:pointer;appearance:none;
 <div class="progress-overlay" id="progress-overlay">
   <div class="progress-box">
     <div class="spinner"></div>
-    <h3 id="progress-title">Running PCoA Pipeline</h3>
+    <h3 id="progress-title">Summarizing and Attributing</h3>
     <p id="progress-subtitle">Analyzing article with GPT-4o…</p>
     <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-fill"></div></div>
     <div class="progress-label" id="progress-label">Preparing…</div>
@@ -918,7 +1132,7 @@ select{cursor:pointer;appearance:none;
 <!-- ====================================================================== -->
 <div class="container">
   <div class="footer">
-    <strong>PCoA</strong> &mdash; Phrase-Level Context Attribution for Medical Aspect-Based Summarization<br/>
+    <strong>Summer</strong> &mdash; Phrase-Level Context Attribution for Medical Aspect-Based Summarization<br/>
     Chu, Frihat, Pakull, Damm, Li, Muhabbek, Lodde, Fuhr &middot; University of Duisburg-Essen &middot;
     <a href="https://arxiv.org/abs/2601.03418" target="_blank">arXiv: 2601.03418</a>
   </div>
@@ -941,7 +1155,7 @@ const ASPECTS_META = [
   {code:'R',name:'Randomization'},{code:'B',name:'Blinding'},
   {code:'FU',name:'Funding'},{code:'RE',name:'Registration'},
 ];
-const DEFAULT_SELECTION = ['OB','P','I','C','O','F'];
+const DEFAULT_SELECTION = ['P','I','C','O'];
 
 let state = {
   mode: 'search',
@@ -960,6 +1174,7 @@ let state = {
 document.addEventListener('DOMContentLoaded', () => {
   renderAspectGrid();
   updateAspectCount();
+  initDraggable();
 
   // PDF drag-and-drop setup
   const dropzone = document.getElementById('pdf-dropzone');
@@ -1051,7 +1266,17 @@ async function api(url, body) {
 }
 
 /* ========================================================================= */
-/*  SEARCH / FETCH                                                            */
+/*  scroll To SecondRow                                                      */
+/* ========================================================================= */
+function scrollToSecondRow() {
+  const secondRow = document.querySelector('.rows-grid');
+  if (!secondRow) return;
+  const offset = secondRow.getBoundingClientRect().top + window.scrollY - 10; // 60px 留出 toolbar 高度
+  window.scrollTo({ top: offset, behavior: 'smooth' });
+}
+
+/* ========================================================================= */
+/*  SEARCH / FETCH                                                           */
 /* ========================================================================= */
 async function doSearch() {
   const query = document.getElementById('search-query').value.trim();
@@ -1066,6 +1291,7 @@ async function doSearch() {
     hideProgress();
     renderArticleList();
     showToast(`Found ${articles.length} articles`, 'success');
+    scrollToSecondRow();
   } catch (e) {
     hideProgress();
     showToast(e.message, 'error');
@@ -1198,10 +1424,25 @@ function selectArticle(idx) {
   state.evaluations = {};
   renderArticleList();
   showSelectedBar();
+
+  // 切换为 inline 模式
+  abstractPanelFloating = false;
+  const panel = document.getElementById('abstract-panel');
+  const closeBtn = document.getElementById('abstract-close-btn');
+  panel.classList.add('inline-mode');
+  panel.style.left = panel.style.top = panel.style.bottom = panel.style.right = '';
+  panel.style.width = panel.style.height = '';
+  closeBtn.innerHTML = '⤢';
+  closeBtn.title = 'Float panel';
+  closeBtn.onclick = openAbstractPanel;
+
+  // 移入 selected-bar 下方的预览槽
+  document.getElementById('abstract-preview-slot').appendChild(panel);
+
   renderAbstract();
+
   document.getElementById('results-content').style.display = 'none';
   document.getElementById('results-placeholder').style.display = '';
-  // Reset eval panel
   document.getElementById('eval-placeholder').style.display = '';
   document.getElementById('eval-content').style.display = 'none';
 }
@@ -1237,10 +1478,15 @@ function renderAbstract(highlightIndices, highlightPhrases) {
   const panel = document.getElementById('abstract-panel');
   if (!a) { panel.style.display = 'none'; return; }
   panel.style.display = '';
+
+  if (abstractPanelFloating) {
+    panel.classList.remove('inline-mode');
+  }
+
   const isFulltext = a.is_fulltext || a._isFulltext;
   document.getElementById('abstract-panel-title').textContent =
     isFulltext ? 'Source Fulltext' : 'Source Abstract';
-  // Use backend-indexed sentences if analysis is available, else fallback to client-side split
+
   let sents;
   if (state.analysis && state.analysis.sentences && state.analysis.sentences.length) {
     sents = state.analysis.sentences.map(s => ({idx: s.index, text: s.text}));
@@ -1249,22 +1495,54 @@ function renderAbstract(highlightIndices, highlightPhrases) {
     sents = raw.map((s, i) => ({idx: i + 1, text: s}));
   }
   document.getElementById('sent-count').textContent = sents.length + ' sentences';
+
   const hl = new Set(highlightIndices || []);
   const viewer = document.getElementById('abstract-viewer');
-  viewer.innerHTML = sents.map(s => {
+
+  // 整段渲染：每句用 inline <span> 包裹，高亮句加背景色
+  const para = sents.map(s => {
     const isHl = hl.has(s.idx);
     let text = esc(s.text);
     if (isHl && highlightPhrases?.length) text = highlightInText(text, highlightPhrases);
-    return `<div class="abstract-sentence${isHl ? ' highlighted' : ''}">
-      <span class="abs-idx">${s.idx}</span><span>${text}</span></div>`;
+
+    // 句子编号 badge（inline）
+    const idxBadge = `<span class="abs-idx" style="vertical-align:middle;margin-right:3px">${s.idx}</span>`;
+
+    if (isHl) {
+      return `<span class="abs-sent-hl" data-idx="${s.idx}">${idxBadge}${text} </span>`;
+    } else {
+      return `<span class="abs-sent" data-idx="${s.idx}">${idxBadge}${text} </span>`;
+    }
   }).join('');
 
-  // Collapsible logic: auto-collapse fulltext with >20 sentences
+  viewer.innerHTML = `<p style="line-height:1.85;font-size:.82rem;color:var(--text)">${para}</p>`;
+
+
+  // 自动滚动到第一个高亮句子
+  if (hl.size > 0) {
+    const firstHlIdx = [...hl].sort((a, b) => a - b)[0];
+    requestAnimationFrame(() => {
+      const firstHlEl = viewer.querySelector(`.abs-sent-hl[data-idx="${firstHlIdx}"]`);
+      if (!firstHlEl) return;
+
+      // 找到可滚动的容器（floating 模式是 .panel-body，inline 模式是 viewer 自身的最近滚动祖先）
+      const scrollContainer = document.getElementById('abstract-panel').querySelector('.panel-body');
+      if (!scrollContainer) return;
+
+      const containerTop = scrollContainer.getBoundingClientRect().top;
+      const elTop = firstHlEl.getBoundingClientRect().top;
+      const offset = elTop - containerTop + scrollContainer.scrollTop - 40; // 40px 上边距
+
+      scrollContainer.scrollTo({ top: offset, behavior: 'smooth' });
+    });
+  }
+
+  
+  // Collapsible logic
   const collapseBtn = document.getElementById('abstract-collapse-btn');
   const shouldCollapse = isFulltext && sents.length > 20;
   if (shouldCollapse) {
     collapseBtn.classList.remove('hidden');
-    // If there are highlighted sentences, auto-expand; otherwise collapse
     if (hl.size > 0) {
       panel.classList.remove('abstract-collapsed');
       collapseBtn.textContent = 'Hide';
@@ -1301,7 +1579,7 @@ async function runPipeline() {
   state.evaluations = {};
   const btn = document.getElementById('run-btn');
   btn.disabled = true;
-  showProgress('Running PCoA Pipeline',
+  showProgress('Summarizing and Attributing',
     `Analyzing ${aspects.length} aspect${aspects.length>1?'s':''} with ${state.strategy} attribution…`);
   setProgress(10, 'Sending request to GPT-4o…');
 
@@ -1342,12 +1620,19 @@ async function runPipeline() {
 function renderResults() {
   const r = state.analysis;
   if (!r || !r.results.length) return;
+
+  // 把 abstract-panel 从预览槽归位到 results-content 末尾，切回浮动
+  const panel = document.getElementById('abstract-panel');
+  const resultsContent = document.getElementById('results-content');
+  resultsContent.appendChild(panel);
+  openAbstractPanel();
+
   document.getElementById('results-placeholder').style.display = 'none';
   document.getElementById('results-content').style.display = '';
 
   const strategyLabels = {
-    prior: 'Prior Context Attribution (Best F1)',
-    intrinsic: 'Intrinsic Context Attribution',
+    'prior': 'Prior Context Attribution (Best F1)',
+    'intrinsic': 'Intrinsic Context Attribution',
     'post-hoc': 'Post-Hoc Context Attribution',
   };
   const timeStr = state.pipelineTime ? `&nbsp;&middot;&nbsp; <strong>Time:</strong>&nbsp; ${state.pipelineTime}s` : '';
@@ -1357,20 +1642,55 @@ function renderResults() {
      &nbsp;&middot;&nbsp; <strong>Aspects:</strong>&nbsp; ${r.results.length}${timeStr}`;
 
   // Tabs
+  /*
   const tabs = document.getElementById('result-tabs');
   tabs.innerHTML = r.results.map((res, i) => `
     <button class="aspect-tab${i===0?' active':''}" onclick="switchResultTab(${i})">
       ${res.aspect_code}: ${res.aspect_name}
     </button>
   `).join('');
+  */
 
   // Panels
-  renderResultPanel(0);
-  state.activeResultTab = 0;
+  const panels = document.getElementById('result-panels');
+  panels.innerHTML = r.results.map((res, i) => buildResultPanelHTML(res, i)).join('');
 
   // Initialize eval panel for first aspect
+  renderAbstract(r.results[0].sentence_indices, r.results[0].key_phrases);
   renderEvalPanel(0);
+  state.activeResultTab = 0;
 }
+
+function buildResultPanelHTML(res, idx) {
+  if (res.error) {
+    return `<div class="result-block" style="border-bottom:1px solid var(--border)">
+      <div style="padding:2rem;text-align:center;color:var(--red)">
+        <strong>Error:</strong> ${esc(res.error)}</div></div>`;
+  }
+  return `
+    <div class="result-block" style="border-bottom:1px solid var(--border);cursor:default"
+         data-result-idx="${idx}" onmouseenter="onResultHover(${idx})">
+      <div class="section-label" style="margin-bottom:.4rem">
+        <span style="background:var(--primary);color:#fff; padding:2px 9px;border-radius:6px;
+          font-size:.72rem;font-weight:700;letter-spacing:.04em">${res.aspect_code}</span>
+        <span style="font-size:.82rem;font-weight:700;color:var(--text)">${res.aspect_name}</span>
+      </div>
+      <div class="result-section">
+        <div class="summary-card">
+          ${esc(res.summary)}
+          ${res.cited_sentences.map(s => `<span class="s-idx">${s.index}</span>`).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function onResultHover(idx) {
+  const res = state.analysis && state.analysis.results[idx];
+  if (!res) return;
+  renderAbstract(res.sentence_indices, res.key_phrases);
+}
+
 
 function switchResultTab(idx) {
   state.activeResultTab = idx;
@@ -1380,58 +1700,10 @@ function switchResultTab(idx) {
 }
 
 function renderResultPanel(idx) {
-  const res = state.analysis.results[idx];
+  const r = state.analysis;
   const panels = document.getElementById('result-panels');
-
-  if (res.error) {
-    panels.innerHTML = `<div class="result-block">
-      <div style="padding:2rem;text-align:center;color:var(--red)">
-        <strong>Error:</strong> ${esc(res.error)}</div></div>`;
-    return;
-  }
-
-  panels.innerHTML = `
-    <div class="result-block">
-      <!-- SUMMARY -->
-      <div class="result-section">
-        <div class="section-label"><span class="dot dot-summary"></span> Summary</div>
-        <div class="summary-card">${esc(res.summary)}</div>
-      </div>
-
-      <!-- CITED SENTENCES -->
-      <div class="result-section">
-        <div class="section-label">
-          <span class="dot dot-citation"></span>
-          Cited Sentences
-          <span class="count">${res.cited_sentences.length}</span>
-        </div>
-        ${res.cited_sentences.map(s => {
-          let text = esc(s.text);
-          if (res.key_phrases.length) text = highlightInText(text, res.key_phrases);
-          return `<div class="cited-sentence">
-            <span class="s-idx">${s.index}</span>${text}</div>`;
-        }).join('')}
-      </div>
-
-      <!-- KEY PHRASES -->
-      <div class="result-section">
-        <div class="section-label">
-          <span class="dot dot-phrase"></span>
-          Contributory Phrases
-          <span class="count">${res.key_phrases.length}</span>
-        </div>
-        <div class="phrase-list">
-          ${res.key_phrases.map(p => `<span class="phrase-chip">${esc(p)}</span>`).join('')}
-          ${!res.key_phrases.length ? '<span style="color:var(--text3);font-size:.8rem">No phrases extracted</span>' : ''}
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Update abstract viewer with highlights for this aspect
-  renderAbstract(res.sentence_indices, res.key_phrases);
-
-  // Update the evaluation right panel for this aspect
+  panels.innerHTML = buildResultPanelHTML(r.results[idx], idx);
+  renderAbstract(r.results[idx].sentence_indices, r.results[idx].key_phrases);
   renderEvalPanel(idx);
 }
 
@@ -1557,6 +1829,107 @@ function renderEvalResults(idx, data) {
       </div>
     ` : ''}`;
 }
+
+let abstractPanelFloating = true;
+
+function initDraggable() {
+  const panel = document.getElementById('abstract-panel');
+  const header = panel.querySelector('.panel-header');
+  const resizeHandle = document.getElementById('abstract-resize-handle');
+
+  // ── 拖动 ──────────────────────────────────────────────
+  let isDragging = false;
+  let dragStartX, dragStartY, dragStartLeft, dragStartTop;
+
+  header.addEventListener('mousedown', e => {
+    if (!abstractPanelFloating) return;
+    if (e.target.closest('button')) return;
+    isDragging = true;
+    const rect = panel.getBoundingClientRect();
+    // 第一次拖动：从 bottom/right 转为 top/left 定位
+    if (panel.style.bottom !== 'auto') {
+      panel.style.left   = rect.left + 'px';
+      panel.style.top    = rect.top  + 'px';
+      panel.style.bottom = 'auto';
+      panel.style.right  = 'auto';
+    }
+    dragStartX    = e.clientX;
+    dragStartY    = e.clientY;
+    dragStartLeft = parseInt(panel.style.left);
+    dragStartTop  = parseInt(panel.style.top);
+    e.preventDefault();
+  });
+
+  // ── Resize ────────────────────────────────────────────
+  let isResizing = false;
+  let resizeStartX, resizeStartY, resizeStartW, resizeStartH;
+
+  resizeHandle.addEventListener('mousedown', e => {
+    if (!abstractPanelFloating) return;
+    isResizing = true;
+    resizeStartX = e.clientX;
+    resizeStartY = e.clientY;
+    resizeStartW = panel.offsetWidth;
+    resizeStartH = panel.offsetHeight;
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // ── 全局 mousemove / mouseup ──────────────────────────
+  document.addEventListener('mousemove', e => {
+    if (isDragging) {
+      panel.style.left = (dragStartLeft + (e.clientX - dragStartX)) + 'px';
+      panel.style.top  = (dragStartTop  + (e.clientY - dragStartY)) + 'px';
+    }
+    if (isResizing) {
+      const newW = Math.max(220, resizeStartW + (e.clientX - resizeStartX));
+      const newH = Math.max(120, resizeStartH + (e.clientY - resizeStartY));
+      panel.style.width  = newW + 'px';
+      panel.style.height = newH + 'px';
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+    isResizing = false;
+  });
+}
+
+function closeAbstractPanel() {
+  const panel = document.getElementById('abstract-panel');
+  const closeBtn = document.getElementById('abstract-close-btn');
+
+  abstractPanelFloating = false;
+  panel.classList.add('inline-mode');
+  panel.style.left = panel.style.top = panel.style.bottom = panel.style.right = '';
+  panel.style.width = panel.style.height = '';  // ← 新增：重置手动调整的尺寸
+
+  // 改为显示"重新浮动"按钮而不是隐藏
+  closeBtn.innerHTML = '⤢';
+  closeBtn.title = 'Float panel';
+  closeBtn.onclick = openAbstractPanel;
+}
+
+function openAbstractPanel() {
+  const panel = document.getElementById('abstract-panel');
+  const closeBtn = document.getElementById('abstract-close-btn');
+
+  abstractPanelFloating = true;
+  panel.classList.remove('inline-mode');
+
+  // 重置回左侧默认位置
+  panel.style.left   = '20px';
+  panel.style.top    = '';
+  panel.style.bottom = '5vh';   /* ← 与 CSS 保持一致 */
+  panel.style.right  = 'auto';
+  panel.style.width  = '';
+  panel.style.height = '';
+
+  closeBtn.innerHTML = '✕';
+  closeBtn.title = 'Close floating panel';
+  closeBtn.onclick = closeAbstractPanel;
+}
+
 
 function renderMetricCard(type, label, fullName, value, idx) {
   return `
