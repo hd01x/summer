@@ -1503,9 +1503,16 @@ function renderEvalResults(idx, data) {
     ` : ''}`;
 }
 
+const METRIC_TOOLTIPS = {
+  ecr: 'Summary is decomposed into atomic claims.\nECR = claims supported by at least one cited sentence / total claims.',
+  ssr: 'Each cited sentence is checked against the claims.\nSSR = sentences that support at least one claim / total cited sentences.',
+  cpr: 'Key phrases are tokenized and checked against the summary.\nCPR = phrase tokens found in the summary / total phrase tokens.',
+};
+
 function renderMetricCard(type, label, fullName, value, idx) {
+  const tooltip = METRIC_TOOLTIPS[type] || '';
   return `
-    <div class="metric-card metric-${type}">
+    <div class="metric-card metric-${type}" title="${tooltip}">
       <div class="metric-header">
         <span class="metric-abbr">${label}</span>
         <span class="metric-value">${esc(value)}</span>
