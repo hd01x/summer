@@ -1427,20 +1427,23 @@ function renderEvalResults(idx, data) {
       if (cited) supportingIndices.add(cited.index);
     }));
   }
-  const ssrParts = data.ssr ? data.ssr.split('/') : [];
-  const ssrNum = ssrParts.length === 2 ? parseInt(ssrParts[0]) : supportingIndices.size;
-  const ssrDen = ssrParts.length === 2 ? parseInt(ssrParts[1]) : res.cited_sentences.length;
+  // Derive header counts from actual visual matches, not backend ratio
+  const ssrNum = supportingIndices.size;
+  const ssrDen = res.cited_sentences.length;
 
   // --- Compute CPR detail: which key phrases are "contributory" ---
-  // A phrase is contributory if it appears (case-insensitive) in any claim's text
+  // A phrase is contributory if ALL its words appear in the claim texts
+  // (word-level matching, not exact substring, to avoid false negatives
+  //  like "adjuvant study" failing when claims say "adjuvant ... study")
   const claimTextsJoined = data.details ? data.details.map(d => d.claim.toLowerCase()).join(' ') : '';
-  const phraseMatches = (res.key_phrases || []).map(p => ({
-    phrase: p,
-    found: claimTextsJoined.includes(p.toLowerCase()),
-  }));
-  const cprParts = data.cpr ? data.cpr.split('/') : [];
-  const cprNum = cprParts.length === 2 ? parseInt(cprParts[0]) : phraseMatches.filter(p => p.found).length;
-  const cprDen = cprParts.length === 2 ? parseInt(cprParts[1]) : phraseMatches.length;
+  const phraseMatches = (res.key_phrases || []).map(p => {
+    const words = p.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    const found = words.length > 0 && words.every(w => claimTextsJoined.includes(w));
+    return {phrase: p, found};
+  });
+  // Derive header counts from actual visual matches, not backend ratio
+  const cprNum = phraseMatches.filter(p => p.found).length;
+  const cprDen = phraseMatches.length;
 
   return `
     <div class="eval-metrics" id="eval-metrics-${idx}">
