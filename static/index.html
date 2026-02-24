@@ -1436,17 +1436,12 @@ function renderEvalResults(idx, data) {
   const ssrNum = supportingIndices.size;
   const ssrDen = res.cited_sentences.length;
 
-  // --- CPR detail: use contributory tokens returned by eval API ---
-  const contributorySet = new Set((data.contributory_kps || []).map(t => t.toLowerCase()));
-  // Tokenize each key phrase and check which tokens are contributory
-  const allTokens = [];
-  (res.key_phrases || []).forEach(p => {
-    p.split(/\s+/).filter(w => w.length > 0).forEach(token => {
-      allTokens.push({token, found: contributorySet.has(token.toLowerCase())});
-    });
-  });
-  const cprNum = allTokens.filter(t => t.found).length;
-  const cprDen = allTokens.length;
+  // --- CPR detail: show contributory tokens directly from the eval API ---
+  // No client-side tokenization — just use what the backend returned.
+  const contributoryTokens = data.contributory_kps || [];
+  const cprParts = data.cpr ? data.cpr.split('/') : [];
+  const cprNum = cprParts.length === 2 ? parseInt(cprParts[0]) : contributoryTokens.length;
+  const cprDen = cprParts.length === 2 ? parseInt(cprParts[1]) : contributoryTokens.length;
 
   return `
     <div class="eval-metrics" id="eval-metrics-${idx}">
@@ -1487,19 +1482,21 @@ function renderEvalResults(idx, data) {
       </div>
     ` : ''}
 
-    ${allTokens.length ? `
+    ${cprDen > 0 ? `
       <button class="eval-details-toggle" id="eval-toggle-cpr-${idx}" onclick="toggleEvalDetail('cpr',${idx})">
         <span class="arrow">&#9654;</span> Phrase Coverage (${cprNum}/${cprDen} tokens)
       </button>
       <div class="eval-details" id="eval-details-cpr-${idx}">
         <div style="display:flex;flex-wrap:wrap;gap:5px;padding:.3rem 0">
-          ${allTokens.map(t => `
-            <span class="phrase-chip" style="font-size:.74rem;${t.found
-              ? 'background:var(--green-light);color:var(--green);border-color:var(--green-border)'
-              : 'background:var(--surface2);color:var(--text3);border-color:var(--border2);text-decoration:line-through'
-            }">${esc(t.token)}</span>
+          ${contributoryTokens.map(t => `
+            <span class="phrase-chip" style="font-size:.74rem;
+              background:var(--green-light);color:var(--green);border-color:var(--green-border)
+            ">${esc(t)}</span>
           `).join('')}
         </div>
+        ${cprDen - cprNum > 0 ? `<div style="font-size:.72rem;color:var(--text3);margin-top:.4rem">
+          ${cprDen - cprNum} token${cprDen - cprNum > 1 ? 's' : ''} not found in summary
+        </div>` : ''}
       </div>
     ` : ''}`;
 }
