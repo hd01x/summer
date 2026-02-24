@@ -1422,22 +1422,18 @@ function renderEvalButton(idx) {
 function renderEvalResults(idx, data) {
   const res = state.analysis.results[idx];
 
-  // --- Compute SSR detail: which cited sentences are "supporting" ---
-  // data.details[].sentences[] contains 1-based positions in the cited_sentences
-  // array, NOT original document indices.  Map them back to document indices.
-  const supportingIndices = new Set();
-  if (data.details) {
-    data.details.forEach(d => d.sentences.forEach(pos => {
-      const cited = res.cited_sentences[pos - 1];
-      if (cited) supportingIndices.add(cited.index);
-    }));
-  }
-  // Derive header counts from actual visual matches, not backend ratio
-  const ssrNum = supportingIndices.size;
-  const ssrDen = res.cited_sentences.length;
+  // --- ECR: claims_citations from API (claim → supporting sentences) ---
+  const claimsCitations = data.claims_citations || [];
 
-  // --- CPR detail: show contributory tokens directly from the eval API ---
-  // No client-side tokenization — just use what the backend returned.
+  // --- SSR: citations_claims from API (sentence → supporting claims) ---
+  // Build lookup: sentence_index → claims[]
+  const sentClaimsMap = {};
+  (data.citations_claims || []).forEach(c => { sentClaimsMap[c.sentence_index] = c.claims; });
+  const ssrParts = data.ssr ? data.ssr.split('/') : [];
+  const ssrNum = ssrParts.length === 2 ? parseInt(ssrParts[0]) : 0;
+  const ssrDen = ssrParts.length === 2 ? parseInt(ssrParts[1]) : 0;
+
+  // --- CPR: contributory tokens from API ---
   const contributoryTokens = data.contributory_kps || [];
   const cprParts = data.cpr ? data.cpr.split('/') : [];
   const cprNum = cprParts.length === 2 ? parseInt(cprParts[0]) : contributoryTokens.length;
@@ -1450,12 +1446,12 @@ function renderEvalResults(idx, data) {
       ${renderMetricCard('cpr', 'CPR', 'Contributory Phrase Recall', data.cpr, idx)}
     </div>
 
-    ${data.details && data.details.length ? `
+    ${claimsCitations.length ? `
       <button class="eval-details-toggle" id="eval-toggle-ecr-${idx}" onclick="toggleEvalDetail('ecr',${idx})">
-        <span class="arrow">&#9654;</span> Claim Decomposition (${data.details.length} claims)
+        <span class="arrow">&#9654;</span> Claim Decomposition (${claimsCitations.length} claims)
       </button>
       <div class="eval-details" id="eval-details-ecr-${idx}">
-        ${data.details.map(d => `
+        ${claimsCitations.map(d => `
           <div class="claim-item">
             <div class="claim-text">${esc(d.claim)}</div>
             <div class="claim-sents">
@@ -1467,16 +1463,22 @@ function renderEvalResults(idx, data) {
       </div>
     ` : ''}
 
-    ${res.cited_sentences.length ? `
+    ${ssrDen > 0 ? `
       <button class="eval-details-toggle" id="eval-toggle-ssr-${idx}" onclick="toggleEvalDetail('ssr',${idx})">
         <span class="arrow">&#9654;</span> Sentence Support (${ssrNum}/${ssrDen} supporting)
       </button>
       <div class="eval-details" id="eval-details-ssr-${idx}">
         ${res.cited_sentences.map(s => {
-          const match = supportingIndices.has(s.index);
+          const claims = sentClaimsMap[s.index];
+          const match = !!claims;
           return `<div class="eval-detail-item ${match ? 'edi-match' : 'edi-miss'}">
             <span class="edi-idx">${s.index}</span>
-            <span>${esc(s.text)}</span>
+            <div>
+              <div>${esc(s.text)}</div>
+              ${match ? `<div style="font-size:.7rem;color:var(--green);margin-top:.25rem">
+                Supports: ${claims.map(c => `<em>${esc(c)}</em>`).join('; ')}
+              </div>` : ''}
+            </div>
           </div>`;
         }).join('')}
       </div>
@@ -1527,7 +1529,7 @@ async function runEvaluation(idx) {
   try {
     const data = await api('/api/evaluate', {
       summary: res.summary,
-      sentences: res.cited_sentences.map(s => s.text),
+      sentences: res.cited_sentences.map(s => ({id: String(s.index), text: s.text})),
       kps: res.key_phrases,
     });
     state.evaluations[idx] = data;
@@ -1556,7 +1558,7 @@ async function runAllEvaluations() {
     try {
       const data = await api('/api/evaluate', {
         summary: res.summary,
-        sentences: res.cited_sentences.map(s => s.text),
+        sentences: res.cited_sentences.map(s => ({id: String(s.index), text: s.text})),
         kps: res.key_phrases,
       });
       state.evaluations[i] = data;

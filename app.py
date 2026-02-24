@@ -81,20 +81,29 @@ class AspectInfo(BaseModel):
     description: str
     example_summary: str
 
+class EvalSentence(BaseModel):
+    id: str
+    text: str
+
 class EvaluateRequest(BaseModel):
     summary: str
-    sentences: List[str]
+    sentences: List[EvalSentence]
     kps: List[str]
 
-class ClaimDetail(BaseModel):
+class ClaimCitation(BaseModel):
     claim: str
     sentences: List[int]
+
+class CitationClaim(BaseModel):
+    sentence_index: int
+    claims: List[str]
 
 class EvaluateResponse(BaseModel):
     ecr: str
     ssr: str
     cpr: str
-    details: List[ClaimDetail]
+    claims_citations: List[ClaimCitation] = []
+    citations_claims: List[CitationClaim] = []
     contributory_kps: List[str] = []
 
 # --- Routes ---
@@ -243,7 +252,11 @@ async def evaluate(req: EvaluateRequest) -> EvaluateResponse:
     if not req.summary or not req.summary.strip():
         raise HTTPException(status_code=422, detail="Cannot evaluate an empty summary")
 
-    payload = {"summary": req.summary, "sentences": req.sentences, "kps": req.kps}
+    payload = {
+        "summary": req.summary,
+        "sentences": [{"id": s.id, "text": s.text} for s in req.sentences],
+        "kps": req.kps,
+    }
     last_error = None
 
     for attempt in range(_EVAL_MAX_RETRIES):
@@ -255,9 +268,13 @@ async def evaluate(req: EvaluateRequest) -> EvaluateResponse:
                 ecr=data.get("ecr", "0/0"),
                 ssr=data.get("ssr", "0/0"),
                 cpr=data.get("cpr", "0/0"),
-                details=[
-                    ClaimDetail(claim=d.get("claim", ""), sentences=d.get("sentences", []))
-                    for d in data.get("details", [])
+                claims_citations=[
+                    ClaimCitation(claim=d.get("claim", ""), sentences=d.get("sentences", []))
+                    for d in data.get("claims_citations", [])
+                ],
+                citations_claims=[
+                    CitationClaim(sentence_index=d.get("sentence_index", 0), claims=d.get("claims", []))
+                    for d in data.get("citations_claims", [])
                 ],
                 contributory_kps=data.get("contributory_kps", []),
             )
