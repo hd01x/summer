@@ -1432,16 +1432,14 @@ function renderEvalResults(idx, data) {
   const ssrDen = res.cited_sentences.length;
 
   // --- Compute CPR detail: which key phrases are "contributory" ---
-  // A phrase is contributory if ALL its words appear in the claim texts
-  // (word-level matching, not exact substring, to avoid false negatives
-  //  like "adjuvant study" failing when claims say "adjuvant ... study")
-  const claimTextsJoined = data.details ? data.details.map(d => d.claim.toLowerCase()).join(' ') : '';
+  // CPR measures whether key phrases are reflected in the *summary*.
+  // Word-level matching: all words of the phrase must appear in the summary.
+  const summaryLower = (res.summary || '').toLowerCase();
   const phraseMatches = (res.key_phrases || []).map(p => {
     const words = p.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-    const found = words.length > 0 && words.every(w => claimTextsJoined.includes(w));
+    const found = words.length > 0 && words.every(w => summaryLower.includes(w));
     return {phrase: p, found};
   });
-  // Derive header counts from actual visual matches, not backend ratio
   const cprNum = phraseMatches.filter(p => p.found).length;
   const cprDen = phraseMatches.length;
 
