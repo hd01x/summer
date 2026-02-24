@@ -289,6 +289,16 @@ select{cursor:pointer;appearance:none;
 /* ========================================================================= */
 /*  SOURCE ABSTRACT VIEWER                                                    */
 /* ========================================================================= */
+/* Collapsible abstract */
+.abstract-collapsed .abstract-viewer{display:none}
+.collapse-toggle{
+  margin-left:auto;padding:3px 12px;font-size:.72rem;font-weight:600;
+  border:1px solid var(--border);border-radius:14px;background:var(--surface2);
+  color:var(--text2);cursor:pointer;transition:var(--transition);
+  font-family:var(--font);white-space:nowrap;
+}
+.collapse-toggle:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+
 .abstract-viewer{padding:1rem 1.25rem}
 .abstract-sentence{
   padding:.55rem .9rem;border-radius:var(--radius-sm);margin-bottom:.3rem;
@@ -539,6 +549,24 @@ select{cursor:pointer;appearance:none;
   font-family:var(--mono);margin-right:3px;
 }
 
+/* SSR / CPR detail items */
+.eval-detail-item{
+  padding:.5rem .8rem;border-radius:var(--radius-sm);margin-bottom:.3rem;
+  font-size:.8rem;line-height:1.55;display:flex;align-items:start;gap:.5rem;
+}
+.eval-detail-item .edi-icon{flex-shrink:0;font-size:.85rem;margin-top:1px}
+.eval-detail-item.edi-match{background:var(--green-light);border-left:3px solid var(--green)}
+.eval-detail-item.edi-miss{background:var(--surface2);border-left:3px solid var(--border2);color:var(--text3)}
+.eval-detail-item.edi-match .edi-icon{color:var(--green)}
+.eval-detail-item.edi-miss .edi-icon{color:var(--text3)}
+.eval-detail-item .edi-idx{
+  flex-shrink:0;min-width:22px;height:20px;display:inline-flex;
+  align-items:center;justify-content:center;border-radius:5px;
+  font-size:.65rem;font-weight:700;font-family:var(--mono);
+}
+.eval-detail-item.edi-match .edi-idx{background:var(--green);color:#fff}
+.eval-detail-item.edi-miss .edi-idx{background:var(--border2);color:var(--text3)}
+
 /* Evaluation right column */
 .eval-col{position:sticky;top:12px}
 .eval-placeholder{
@@ -780,6 +808,7 @@ select{cursor:pointer;appearance:none;
         <div class="panel-header">
           <h2 id="abstract-panel-title">Source Abstract</h2>
           <span class="count" id="sent-count">0 sentences</span>
+          <button class="collapse-toggle hidden" id="abstract-collapse-btn" onclick="toggleAbstractCollapse()"></button>
         </div>
         <div class="panel-body flush">
           <div class="abstract-viewer" id="abstract-viewer"></div>
@@ -1153,8 +1182,9 @@ function renderAbstract(highlightIndices, highlightPhrases) {
   const panel = document.getElementById('abstract-panel');
   if (!a) { panel.style.display = 'none'; return; }
   panel.style.display = '';
+  const isFulltext = a.is_fulltext || a._isFulltext;
   document.getElementById('abstract-panel-title').textContent =
-    (a.is_fulltext || a._isFulltext) ? 'Source Fulltext' : 'Source Abstract';
+    isFulltext ? 'Source Fulltext' : 'Source Abstract';
   // Use backend-indexed sentences if analysis is available, else fallback to client-side split
   let sents;
   if (state.analysis && state.analysis.sentences && state.analysis.sentences.length) {
@@ -1173,6 +1203,36 @@ function renderAbstract(highlightIndices, highlightPhrases) {
     return `<div class="abstract-sentence${isHl ? ' highlighted' : ''}">
       <span class="abs-idx">${s.idx}</span><span>${text}</span></div>`;
   }).join('');
+
+  // Collapsible logic: auto-collapse fulltext with >20 sentences
+  const collapseBtn = document.getElementById('abstract-collapse-btn');
+  const shouldCollapse = isFulltext && sents.length > 20;
+  if (shouldCollapse) {
+    collapseBtn.classList.remove('hidden');
+    // If there are highlighted sentences, auto-expand; otherwise collapse
+    if (hl.size > 0) {
+      panel.classList.remove('abstract-collapsed');
+      collapseBtn.textContent = 'Hide';
+    } else {
+      panel.classList.add('abstract-collapsed');
+      collapseBtn.textContent = `Show ${sents.length} sentences`;
+    }
+  } else {
+    collapseBtn.classList.add('hidden');
+    panel.classList.remove('abstract-collapsed');
+  }
+}
+
+function toggleAbstractCollapse() {
+  const panel = document.getElementById('abstract-panel');
+  const btn = document.getElementById('abstract-collapse-btn');
+  const isCollapsed = panel.classList.toggle('abstract-collapsed');
+  if (isCollapsed) {
+    const count = document.getElementById('abstract-viewer').children.length;
+    btn.textContent = `Show ${count} sentences`;
+  } else {
+    btn.textContent = 'Hide';
+  }
 }
 
 /* ========================================================================= */
@@ -1355,17 +1415,41 @@ function renderEvalButton(idx) {
 }
 
 function renderEvalResults(idx, data) {
+  const res = state.analysis.results[idx];
+
+  // --- Compute SSR detail: which cited sentences are "supporting" ---
+  // A sentence is supporting if its index appears in any claim's sentences[] array
+  const supportingIndices = new Set();
+  if (data.details) {
+    data.details.forEach(d => d.sentences.forEach(s => supportingIndices.add(s)));
+  }
+  const ssrParts = data.ssr ? data.ssr.split('/') : [];
+  const ssrNum = ssrParts.length === 2 ? parseInt(ssrParts[0]) : supportingIndices.size;
+  const ssrDen = ssrParts.length === 2 ? parseInt(ssrParts[1]) : res.cited_sentences.length;
+
+  // --- Compute CPR detail: which key phrases are "contributory" ---
+  // A phrase is contributory if it appears (case-insensitive) in any claim's text
+  const claimTextsJoined = data.details ? data.details.map(d => d.claim.toLowerCase()).join(' ') : '';
+  const phraseMatches = (res.key_phrases || []).map(p => ({
+    phrase: p,
+    found: claimTextsJoined.includes(p.toLowerCase()),
+  }));
+  const cprParts = data.cpr ? data.cpr.split('/') : [];
+  const cprNum = cprParts.length === 2 ? parseInt(cprParts[0]) : phraseMatches.filter(p => p.found).length;
+  const cprDen = cprParts.length === 2 ? parseInt(cprParts[1]) : phraseMatches.length;
+
   return `
     <div class="eval-metrics" id="eval-metrics-${idx}">
       ${renderMetricCard('ecr', 'ECR', 'Evidence Claim Recall', data.ecr, idx)}
       ${renderMetricCard('ssr', 'SSR', 'Supportive Sentence Recall', data.ssr, idx)}
       ${renderMetricCard('cpr', 'CPR', 'Contributory Phrase Recall', data.cpr, idx)}
     </div>
+
     ${data.details && data.details.length ? `
-      <button class="eval-details-toggle" id="eval-toggle-${idx}" onclick="toggleClaimDetails(${idx})">
+      <button class="eval-details-toggle" id="eval-toggle-ecr-${idx}" onclick="toggleEvalDetail('ecr',${idx})">
         <span class="arrow">&#9654;</span> Claim Decomposition (${data.details.length} claims)
       </button>
-      <div class="eval-details" id="eval-details-${idx}">
+      <div class="eval-details" id="eval-details-ecr-${idx}">
         ${data.details.map(d => `
           <div class="claim-item">
             <div class="claim-text">${esc(d.claim)}</div>
@@ -1373,6 +1457,35 @@ function renderEvalResults(idx, data) {
               Supported by: ${d.sentences.length ? d.sentences.map(s =>
                 `<span class="sent-ref">${s}</span>`).join('') : '<em>no sentences</em>'}
             </div>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    ${res.cited_sentences.length ? `
+      <button class="eval-details-toggle" id="eval-toggle-ssr-${idx}" onclick="toggleEvalDetail('ssr',${idx})">
+        <span class="arrow">&#9654;</span> Sentence Support (${ssrNum}/${ssrDen} supporting)
+      </button>
+      <div class="eval-details" id="eval-details-ssr-${idx}">
+        ${res.cited_sentences.map(s => {
+          const match = supportingIndices.has(s.index);
+          return `<div class="eval-detail-item ${match ? 'edi-match' : 'edi-miss'}">
+            <span class="edi-idx">${s.index}</span>
+            <span>${esc(s.text)}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    ` : ''}
+
+    ${phraseMatches.length ? `
+      <button class="eval-details-toggle" id="eval-toggle-cpr-${idx}" onclick="toggleEvalDetail('cpr',${idx})">
+        <span class="arrow">&#9654;</span> Phrase Coverage (${cprNum}/${cprDen} contributory)
+      </button>
+      <div class="eval-details" id="eval-details-cpr-${idx}">
+        ${phraseMatches.map(p => `
+          <div class="eval-detail-item ${p.found ? 'edi-match' : 'edi-miss'}">
+            <span class="edi-icon">${p.found ? '&#10003;' : '&#10007;'}</span>
+            <span>${esc(p.phrase)}</span>
           </div>
         `).join('')}
       </div>
@@ -1415,7 +1528,7 @@ async function runEvaluation(idx) {
     }
   } catch (e) {
     if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
-    showToast('Evaluation failed: ' + e.message, 'error');
+    showToast('Eval service temporarily unavailable — try again', 'error');
   }
 }
 
@@ -1476,9 +1589,9 @@ function parseMetricRatio(str) {
   return Math.min(num / den, 1);
 }
 
-function toggleClaimDetails(idx) {
-  const toggle = document.getElementById(`eval-toggle-${idx}`);
-  const details = document.getElementById(`eval-details-${idx}`);
+function toggleEvalDetail(type, idx) {
+  const toggle = document.getElementById(`eval-toggle-${type}-${idx}`);
+  const details = document.getElementById(`eval-details-${type}-${idx}`);
   if (!toggle || !details) return;
   toggle.classList.toggle('open');
   details.classList.toggle('open');

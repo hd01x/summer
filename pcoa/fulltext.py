@@ -35,11 +35,12 @@ class FulltextResult:
 #  Section filtering (shared by both sources)
 # ---------------------------------------------------------------------------
 
-_KEEP_SECTIONS = {
-    "abstract", "introduction", "background", "methods", "materials",
-    "materials and methods", "methods and materials",
-    "results", "findings", "discussion", "conclusion", "conclusions",
-}
+_KEEP_PREFIXES = (
+    "abstract", "introduction", "background",
+    "method", "material",                          # catches "methods", "materials and methods", etc.
+    "result", "finding",                           # catches "results", "results and discussion", "findings"
+    "discussion", "conclusion",
+)
 
 _DROP_SECTIONS = {
     "references", "bibliography", "acknowledgments", "acknowledgements",
@@ -55,18 +56,53 @@ _DROP_SECTIONS = {
 
 _MAX_WORDS = 8_000
 
+# Patterns for garbage lines that slip through section filtering
+_GARBAGE_LINE_RE = re.compile(
+    r"\{abstract\}|\{sentences\}|\{phrases\}|\{summary\}"
+    r"|#\s*Instructions:|#\s*Abstract:|#\s*Summary:"
+    r"|^Table\s*\d+\s*[:.]\s",
+    re.IGNORECASE,
+)
+
+
+def _is_kept_section(heading: str) -> bool:
+    """Return True if the section heading matches the keep-list (prefix match)."""
+    norm = heading.strip().lower()
+    return any(norm.startswith(prefix) for prefix in _KEEP_PREFIXES)
+
+
+def _clean_text(text: str) -> str:
+    """Remove garbage lines (template placeholders, OCR junk, table captions)."""
+    lines: List[str] = []
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if not stripped:
+            lines.append("")
+            continue
+        # Drop template / placeholder lines
+        if _GARBAGE_LINE_RE.search(stripped):
+            continue
+        # Drop lines that are long concatenated words without spaces (OCR garbage)
+        if len(stripped) > 50 and " " not in stripped:
+            continue
+        lines.append(line)
+    return "\n".join(lines)
+
 
 def _filter_sections(sections: List[Tuple[str, str]]) -> str:
-    """Keep informative sections, drop boilerplate, cap at _MAX_WORDS."""
+    """Keep only allowlisted sections, drop everything else, cap at _MAX_WORDS."""
     kept: List[str] = []
     for heading, body in sections:
         norm = heading.strip().lower()
+        # Explicitly dropped sections
         if norm in _DROP_SECTIONS:
             continue
-        # Keep explicitly listed + unknown (conservative)
+        # Only keep sections on the allowlist; unknown sections are dropped
+        if not _is_kept_section(norm):
+            continue
         kept.append(body)
 
-    text = "\n\n".join(kept)
+    text = _clean_text("\n\n".join(kept))
     words = text.split()
     if len(words) > _MAX_WORDS:
         text = " ".join(words[:_MAX_WORDS])

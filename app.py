@@ -5,6 +5,7 @@ ACL 2026 Demo Track
 """
 
 import os
+import time
 from typing import List, Optional
 
 import requests as http_requests
@@ -233,34 +234,42 @@ async def upload_pdf(file: UploadFile = File(...)) -> ArticleOut:
 
 EVAL_API_URL = os.environ.get("EVAL_API_URL", "http://34.32.24.46:8000")
 
+_EVAL_MAX_RETRIES = 3
+_EVAL_RETRY_DELAY = 1.5  # seconds
+
 @app.post("/api/evaluate")
 async def evaluate(req: EvaluateRequest) -> EvaluateResponse:
     if not req.summary or not req.summary.strip():
         raise HTTPException(status_code=422, detail="Cannot evaluate an empty summary")
-    try:
-        resp = http_requests.post(
-            EVAL_API_URL,
-            json={"summary": req.summary, "sentences": req.sentences, "kps": req.kps},
-            timeout=30,
-        )
-        resp.raise_for_status()
-    except http_requests.exceptions.ConnectionError:
-        raise HTTPException(status_code=502, detail="Evaluation service unavailable")
-    except http_requests.exceptions.Timeout:
-        raise HTTPException(status_code=504, detail="Evaluation service timed out")
-    except http_requests.exceptions.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"Evaluation service error: {e}")
 
-    data = resp.json()
-    return EvaluateResponse(
-        ecr=data.get("ecr", "0/0"),
-        ssr=data.get("ssr", "0/0"),
-        cpr=data.get("cpr", "0/0"),
-        details=[
-            ClaimDetail(claim=d.get("claim", ""), sentences=d.get("sentences", []))
-            for d in data.get("details", [])
-        ],
-    )
+    payload = {"summary": req.summary, "sentences": req.sentences, "kps": req.kps}
+    last_error = None
+
+    for attempt in range(_EVAL_MAX_RETRIES):
+        try:
+            resp = http_requests.post(EVAL_API_URL, json=payload, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+            return EvaluateResponse(
+                ecr=data.get("ecr", "0/0"),
+                ssr=data.get("ssr", "0/0"),
+                cpr=data.get("cpr", "0/0"),
+                details=[
+                    ClaimDetail(claim=d.get("claim", ""), sentences=d.get("sentences", []))
+                    for d in data.get("details", [])
+                ],
+            )
+        except http_requests.exceptions.ConnectionError:
+            last_error = "Evaluation service unavailable"
+        except http_requests.exceptions.Timeout:
+            last_error = "Evaluation service timed out"
+        except http_requests.exceptions.HTTPError as e:
+            last_error = f"Evaluation service error: {e}"
+        # Wait before retrying
+        if attempt < _EVAL_MAX_RETRIES - 1:
+            time.sleep(_EVAL_RETRY_DELAY)
+
+    raise HTTPException(status_code=502, detail=last_error)
 
 # Mount static files last so API routes take priority
 app.mount("/static", StaticFiles(directory="static"), name="static")
