@@ -235,6 +235,8 @@ EVAL_API_URL = os.environ.get("EVAL_API_URL", "http://34.32.24.46:8000")
 
 @app.post("/api/evaluate")
 async def evaluate(req: EvaluateRequest) -> EvaluateResponse:
+    if not req.summary or not req.summary.strip():
+        raise HTTPException(status_code=422, detail="Cannot evaluate an empty summary")
     try:
         resp = http_requests.post(
             EVAL_API_URL,

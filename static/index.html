@@ -1339,6 +1339,9 @@ function renderEvalPanel(idx) {
   if (state.evaluations[idx]) {
     body.innerHTML = renderEvalResults(idx, state.evaluations[idx]);
     requestAnimationFrame(() => animateEvalMetrics(idx, state.evaluations[idx]));
+  } else if (!res.summary || res.error) {
+    body.innerHTML = `<div style="text-align:center;padding:1rem;color:var(--text3);font-size:.8rem">
+      No summary available for evaluation.</div>`;
   } else {
     body.innerHTML = renderEvalButton(idx);
   }
@@ -1392,6 +1395,10 @@ function renderMetricCard(type, label, fullName, value, idx) {
 
 async function runEvaluation(idx) {
   const res = state.analysis.results[idx];
+  if (!res.summary || res.error) {
+    showToast('Cannot evaluate — no summary for this aspect', 'error');
+    return;
+  }
   const btn = document.getElementById(`eval-btn-${idx}`);
   if (btn) { btn.classList.add('loading'); btn.disabled = true; }
 
@@ -1423,6 +1430,7 @@ async function runAllEvaluations() {
   for (let i = 0; i < state.analysis.results.length; i++) {
     if (state.evaluations[i]) { success++; continue; } // already cached
     const res = state.analysis.results[i];
+    if (!res.summary || res.error) { fail++; continue; } // skip empty/errored
     try {
       const data = await api('/api/evaluate', {
         summary: res.summary,
@@ -1430,6 +1438,7 @@ async function runAllEvaluations() {
         kps: res.key_phrases,
       });
       state.evaluations[i] = data;
+      success++;
       // Update panel if viewing this aspect
       if (state.activeResultTab === i) renderEvalPanel(i);
     } catch (e) {
