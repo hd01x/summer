@@ -1418,10 +1418,14 @@ function renderEvalResults(idx, data) {
   const res = state.analysis.results[idx];
 
   // --- Compute SSR detail: which cited sentences are "supporting" ---
-  // A sentence is supporting if its index appears in any claim's sentences[] array
+  // data.details[].sentences[] contains 1-based positions in the cited_sentences
+  // array, NOT original document indices.  Map them back to document indices.
   const supportingIndices = new Set();
   if (data.details) {
-    data.details.forEach(d => d.sentences.forEach(s => supportingIndices.add(s)));
+    data.details.forEach(d => d.sentences.forEach(pos => {
+      const cited = res.cited_sentences[pos - 1];
+      if (cited) supportingIndices.add(cited.index);
+    }));
   }
   const ssrParts = data.ssr ? data.ssr.split('/') : [];
   const ssrNum = ssrParts.length === 2 ? parseInt(ssrParts[0]) : supportingIndices.size;
