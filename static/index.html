@@ -6,6 +6,7 @@
 <title>Summer — Traceable Medical Aspect-Based Summarization</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
 <style>
 /* ========================================================================= */
 /*  DESIGN SYSTEM                                                             */
@@ -284,15 +285,6 @@ select{cursor:pointer;appearance:none;
   color:var(--primary);opacity:.2;font-family:Georgia,serif;line-height:1;
 }
 
-/* Sentence list in results */
-/*
-.cited-sentence{
-  padding:.1rem 1rem;border-radius:var(--radius-sm); margin-bottom:.4rem;
-  border-left:3px solid var(--red);background:var(--red-light);
-  font-size:.84rem;line-height:1.65;position:relative;
-}
-*/
-
 .s-idx {
   display: inline-flex;
   align-items: center;
@@ -324,7 +316,7 @@ select{cursor:pointer;appearance:none;
 }
 
 /* ========================================================================= */
-/*  Abstract Card                                                            */
+/*  Abstract Panel                                                           */
 /* ========================================================================= */
 #abstract-panel {
   position: fixed;
@@ -344,14 +336,11 @@ select{cursor:pointer;appearance:none;
   background-color: #f7f8fb;
   flex-direction: column;
 }
-
-
 #abstract-panel .panel-body {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
 }
-
 /* resize handle */
 #abstract-resize-handle {
   position: absolute;
@@ -369,7 +358,6 @@ select{cursor:pointer;appearance:none;
   border-bottom: 2px solid var(--border2);
   border-radius: 1px;
 }
-
 #abstract-panel.inline-mode {
   position: static;
   width: 100%;
@@ -380,11 +368,9 @@ select{cursor:pointer;appearance:none;
   overflow: visible;
   display: block;
 }
-
 #abstract-panel.inline-mode #abstract-resize-handle {
   display: none;
 }
-
 #abstract-panel .panel-header {
   cursor: grab;
   user-select: none;
@@ -392,12 +378,9 @@ select{cursor:pointer;appearance:none;
   background: var(--surface);
   z-index: 1;
 }
-
 #abstract-panel.inline-mode .panel-header {
   cursor: default;
 }
-
-
 .abs-sent {
   display: inline;
 }
@@ -408,8 +391,6 @@ select{cursor:pointer;appearance:none;
   padding: 1px 3px;
   box-shadow: inset 2px 0 0 var(--red);
 }
-
-/* 段落模式下的 index badge — 覆盖默认的 block 尺寸 */
 .abs-sent .abs-idx,
 .abs-sent-hl .abs-idx {
   display: inline-flex;
@@ -814,7 +795,7 @@ select{cursor:pointer;appearance:none;
 <header class="header">
   <div class="container header-inner">
     <div class="header-text">
-      <h1>Summer: Traceable Medical Aspect-Based <span>Summarization</span></h1>
+      <h1><span>Summer</span>: Traceable Medical Aspect-Based Summarization</h1>
       <p>via Phrase-Level Context Attribution.</p>
       <p><i>Retrieve, analyze, and summarize clinical evidence with traceable citations to help healthcare professionals quickly access trustworthy medical evidence.</i></p>
       <div class="header-badges">
@@ -1462,7 +1443,6 @@ function selectArticle(idx) {
   renderArticleList();
   showSelectedBar();
 
-  // 切换为 inline 模式
   abstractPanelFloating = false;
   const panel = document.getElementById('abstract-panel');
   const closeBtn = document.getElementById('abstract-close-btn');
@@ -1473,7 +1453,7 @@ function selectArticle(idx) {
   closeBtn.title = 'Float panel';
   closeBtn.onclick = openAbstractPanel;
 
-  // 移入 selected-bar 下方的预览槽
+  // preview slot at top
   document.getElementById('abstract-preview-slot').appendChild(panel);
 
   renderAbstract();
@@ -1536,15 +1516,12 @@ function renderAbstract(highlightIndices, highlightPhrases) {
   const hl = new Set(highlightIndices || []);
   const viewer = document.getElementById('abstract-viewer');
 
-  // 整段渲染：每句用 inline <span> 包裹，高亮句加背景色
+  // inline highlight
   const para = sents.map(s => {
     const isHl = hl.has(s.idx);
     let text = esc(s.text);
     if (isHl && highlightPhrases?.length) text = highlightInText(text, highlightPhrases);
-
-    // 句子编号 badge（inline）
     const idxBadge = `<span class="abs-idx" style="vertical-align:middle;margin-right:3px">${s.idx}</span>`;
-
     if (isHl) {
       return `<span class="abs-sent-hl" data-idx="${s.idx}">${idxBadge}${text} </span>`;
     } else {
@@ -1555,21 +1532,17 @@ function renderAbstract(highlightIndices, highlightPhrases) {
   viewer.innerHTML = `<p style="line-height:1.85;font-size:.82rem;color:var(--text)">${para}</p>`;
 
 
-  // 自动滚动到第一个高亮句子
+  // Automatically scroll to the first highlighted sentence
   if (hl.size > 0) {
     const firstHlIdx = [...hl].sort((a, b) => a - b)[0];
     requestAnimationFrame(() => {
       const firstHlEl = viewer.querySelector(`.abs-sent-hl[data-idx="${firstHlIdx}"]`);
       if (!firstHlEl) return;
-
-      // 找到可滚动的容器（floating 模式是 .panel-body，inline 模式是 viewer 自身的最近滚动祖先）
       const scrollContainer = document.getElementById('abstract-panel').querySelector('.panel-body');
       if (!scrollContainer) return;
-
       const containerTop = scrollContainer.getBoundingClientRect().top;
       const elTop = firstHlEl.getBoundingClientRect().top;
-      const offset = elTop - containerTop + scrollContainer.scrollTop - 40; // 40px 上边距
-
+      const offset = elTop - containerTop + scrollContainer.scrollTop - 40;
       scrollContainer.scrollTo({ top: offset, behavior: 'smooth' });
     });
   }
@@ -1622,7 +1595,7 @@ async function runPipeline() {
   const btn = document.getElementById('run-btn');
   btn.disabled = true;
 
-  // ── 1. 检查缓存 ──────────────────────────────────────────
+  // 1. Check the cache
   const cached = {};
   const missing = [];
 
@@ -1638,7 +1611,7 @@ async function runPipeline() {
     }
   }
 
-  // ── 2. 全部命中 → 直接渲染 ───────────────────────────────
+  // 2. All Hit → Direct rendering
   if (missing.length === 0) {
     state.pipelineTime = null;
     showToast(`Loaded ${aspects.length} aspects from cache`, 'success');
@@ -1649,7 +1622,7 @@ async function runPipeline() {
     return;
   }
 
-  // ── 3. 部分命中 → 只请求缺失的 ──────────────────────────
+  // 3. Partial Hit → Only request the missing parts
   const cacheHits = aspects.length - missing.length;
   showProgress(
     'Summarizing and Attributing',
@@ -1671,7 +1644,7 @@ async function runPipeline() {
     });
     clearInterval(progressTimer);
 
-    // ── 4. 写入缓存 ──────────────────────────────────────────
+    // 4. Write to cache
     for (const res of result.results) {
       if (!res.error) {
         const key = summaryKey(a.pmid, state.strategy, res.aspect_code);
@@ -1706,7 +1679,7 @@ async function runPipeline() {
 }
 
 function summaryKey(pmid, strategy, aspectCode) {
-  if (pmid === 'custom') return null; // paste 模式不缓存
+  if (pmid === 'custom') return null; // Paste mode does not cache
   return `summary_${pmid}_${strategy}_${aspectCode}`;
 }
 
@@ -1715,7 +1688,7 @@ function evalKey(pmid, strategy, aspectCode) {
   return `eval_${pmid}_${strategy}_${aspectCode}`;
 }
 
-// 按用户选择的 aspect 顺序，从缓存对象拼装 analysis 结构
+// Assemble the analysis structure from the cached objects according to the user-selected aspect order.
 function buildAnalysisFromCache(article, aspects, cached) {
   const results = aspects.map(code => {
     if (cached[code]) return cached[code];
@@ -1725,7 +1698,8 @@ function buildAnalysisFromCache(article, aspects, cached) {
       cited_sentences: [], key_phrases: [], sentence_indices: []
     };
   });
-  // 从任意一个缓存结果里恢复 sentences（prior 策略会带这个字段）
+
+  // Restore sentences from any cached result
   const anySentences = Object.values(cached).find(r => r.sentences?.length)?.sentences || [];
   return {
     pmid: article.pmid,
@@ -1768,7 +1742,6 @@ function renderResults() {
 
   renderAbstract(r.results[0].sentence_indices, r.results[0].key_phrases);
 
-  // 默认不自动触发 eval，等用户点击按钮
   document.getElementById('eval-placeholder').style.display = '';
   document.getElementById('eval-content').style.display = 'none';
 
@@ -1816,10 +1789,10 @@ function onResultHover(idx) {
   const res = state.analysis && state.analysis.results[idx];
   if (!res || !res.summary || res.error) return;
 
-  // 更新 abstract 高亮
+  // Update abstract highlighting
   renderAbstract(res.sentence_indices, res.key_phrases);
 
-  // 先查内存缓存，再查 localStorage
+  // First check the cache, then check localStorage.
   if (!state.evaluations[idx]) {
     const cacheKey = evalKey(state.selectedArticle.pmid, state.strategy, res.aspect_code);
     try {
@@ -1830,7 +1803,7 @@ function onResultHover(idx) {
 
   state.activeResultTab = idx;
 
-  // 更新右侧面板标题
+  //  Update the title of the right panel
   const placeholder = document.getElementById('eval-placeholder');
   const content = document.getElementById('eval-content');
   const label = document.getElementById('eval-aspect-label');
@@ -1839,10 +1812,10 @@ function onResultHover(idx) {
   label.textContent = `${res.aspect_code}: ${res.aspect_name}`;
 
   if (state.evaluations[idx]) {
-    // 命中缓存或 pending — 统一走 renderEvalPanel
+    // Hit cache or pending — uniformly route through renderEvalPanel
     renderEvalPanel(idx);
   } else {
-    // 没有缓存 — 标记 pending，让 renderEvalPanel 显示 loading
+    // No cache — Mark as pending and display loading in the renderEvalPanel
     state.evaluations[idx] = '__pending__';
     renderEvalPanel(idx);
 
@@ -1882,7 +1855,7 @@ async function runAllEvaluationsBackground() {
     const res = results[i];
     if (!res.summary || res.error) continue;
 
-    // 检查内存缓存
+    // Check the memory cache
     if (!state.evaluations[i]) {
       const cacheKey = evalKey(state.selectedArticle.pmid, state.strategy, res.aspect_code);
       try {
@@ -1891,7 +1864,7 @@ async function runAllEvaluationsBackground() {
       } catch(_) {}
     }
 
-    // 已有缓存跳过，按钮显示 done
+    // Cache already exists. Skip. Button displays "Done".
     if (state.evaluations[i]) {
       done++;
       showEvalProgress(done, total);
@@ -1900,7 +1873,7 @@ async function runAllEvaluationsBackground() {
       continue;
     }
 
-    // 标记 pending，按钮显示 evaluating
+    // Mark as pending, button displays evaluating
     state.evaluations[i] = '__pending__';
     const pendingBtn = document.getElementById(`eval-btn-${i}`);
     if (pendingBtn) pendingBtn.innerHTML = '⏳ Evaluating…';
@@ -1953,7 +1926,7 @@ function showEvalProgress(done, total) {
 
 function hideEvalProgress() {
   const bar = document.getElementById('eval-bg-progress');
-  // 短暂延迟后淡出
+  // Fade out after a brief delay
   setTimeout(() => { bar.style.display = 'none'; }, 800);
 }
 
@@ -2108,7 +2081,7 @@ function initDraggable() {
   const header = panel.querySelector('.panel-header');
   const resizeHandle = document.getElementById('abstract-resize-handle');
 
-  // ── 拖动 ──────────────────────────────────────────────
+  // Drag
   let isDragging = false;
   let dragStartX, dragStartY, dragStartLeft, dragStartTop;
 
@@ -2117,7 +2090,7 @@ function initDraggable() {
     if (e.target.closest('button')) return;
     isDragging = true;
     const rect = panel.getBoundingClientRect();
-    // 第一次拖动：从 bottom/right 转为 top/left 定位
+    // First drag: Switch from bottom/right positioning to top/left positioning
     if (panel.style.bottom !== 'auto') {
       panel.style.left   = rect.left + 'px';
       panel.style.top    = rect.top  + 'px';
@@ -2131,7 +2104,7 @@ function initDraggable() {
     e.preventDefault();
   });
 
-  // ── Resize ────────────────────────────────────────────
+  // Resize
   let isResizing = false;
   let resizeStartX, resizeStartY, resizeStartW, resizeStartH;
 
@@ -2146,7 +2119,7 @@ function initDraggable() {
     e.stopPropagation();
   });
 
-  // ── 全局 mousemove / mouseup ──────────────────────────
+  // Global mousemove / mouseup
   document.addEventListener('mousemove', e => {
     if (isDragging) {
       panel.style.left = (dragStartLeft + (e.clientX - dragStartX)) + 'px';
@@ -2173,9 +2146,9 @@ function closeAbstractPanel() {
   abstractPanelFloating = false;
   panel.classList.add('inline-mode');
   panel.style.left = panel.style.top = panel.style.bottom = panel.style.right = '';
-  panel.style.width = panel.style.height = '';  // ← 新增：重置手动调整的尺寸
+  panel.style.width = panel.style.height = '';
 
-  // 改为显示"重新浮动"按钮而不是隐藏
+  // Display the "Refloat" button instead of hiding it.
   closeBtn.innerHTML = '⤢';
   closeBtn.title = 'Float panel';
   closeBtn.onclick = openAbstractPanel;
@@ -2188,10 +2161,10 @@ function openAbstractPanel() {
   abstractPanelFloating = true;
   panel.classList.remove('inline-mode');
 
-  // 重置回左侧默认位置
+  // Reset to the default position on the left side
   panel.style.left   = '20px';
   panel.style.top    = '';
-  panel.style.bottom = '5vh';   /* ← 与 CSS 保持一致 */
+  panel.style.bottom = '5vh';
   panel.style.right  = 'auto';
   panel.style.width  = '';
   panel.style.height = '';
@@ -2316,7 +2289,7 @@ async function runEvaluation(idx) {
     });
     state.evaluations[idx] = data;
 
-    // 存入 localStorage，key 用 pmid + aspect_code 保证唯一性
+    // Store in localStorage, using `pmid + aspect_code` as the key to ensure uniqueness.
     const cacheKey = evalKey(state.selectedArticle.pmid, state.strategy, res.aspect_code);
     try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch(_) {}
 
