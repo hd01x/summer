@@ -95,6 +95,7 @@ class EvaluateResponse(BaseModel):
     ssr: str
     cpr: str
     details: List[ClaimDetail]
+    contributory_kps: List[str] = []
 
 # --- Routes ---
 
@@ -258,6 +259,7 @@ async def evaluate(req: EvaluateRequest) -> EvaluateResponse:
                     ClaimDetail(claim=d.get("claim", ""), sentences=d.get("sentences", []))
                     for d in data.get("details", [])
                 ],
+                contributory_kps=data.get("contributory_kps", []),
             )
         except http_requests.exceptions.ConnectionError:
             last_error = "Evaluation service unavailable"

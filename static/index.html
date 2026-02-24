@@ -1250,11 +1250,13 @@ async function runPipeline() {
     `Analyzing ${aspects.length} aspect${aspects.length>1?'s':''} with ${state.strategy} attribution…`);
   setProgress(10, 'Sending request to GPT-4o…');
 
+  const t0 = performance.now();
   try {
-    // simulate gradual progress
+    // simulate gradual progress + live timer
     const progressTimer = setInterval(() => {
       const cur = parseFloat(document.getElementById('progress-fill').style.width) || 10;
-      if (cur < 85) setProgress(cur + Math.random() * 8, 'Processing aspects…');
+      const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+      if (cur < 85) setProgress(cur + Math.random() * 8, `Processing aspects… ${elapsed}s`);
     }, 2000);
 
     const result = await api('/api/analyze', {
@@ -1262,13 +1264,15 @@ async function runPipeline() {
       aspects, strategy: state.strategy,
     });
     clearInterval(progressTimer);
-    setProgress(100, 'Done!');
+    const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+    setProgress(100, `Done in ${elapsed}s`);
     state.analysis = result;
+    state.pipelineTime = elapsed;
     setTimeout(() => {
       hideProgress();
       renderResults();
     }, 400);
-    showToast('Pipeline complete!', 'success');
+    showToast(`Pipeline complete in ${elapsed}s`, 'success');
   } catch (e) {
     hideProgress();
     showToast(e.message, 'error');
@@ -1291,10 +1295,11 @@ function renderResults() {
     intrinsic: 'Intrinsic Context Attribution',
     'post-hoc': 'Post-Hoc Context Attribution',
   };
+  const timeStr = state.pipelineTime ? `&nbsp;&middot;&nbsp; <strong>Time:</strong>&nbsp; ${state.pipelineTime}s` : '';
   document.getElementById('results-strategy-bar').innerHTML =
     `<strong>Strategy:</strong>&nbsp; ${strategyLabels[r.strategy] || r.strategy}
      &nbsp;&middot;&nbsp; <strong>Model:</strong>&nbsp; GPT-4o
-     &nbsp;&middot;&nbsp; <strong>Aspects:</strong>&nbsp; ${r.results.length}`;
+     &nbsp;&middot;&nbsp; <strong>Aspects:</strong>&nbsp; ${r.results.length}${timeStr}`;
 
   // Tabs
   const tabs = document.getElementById('result-tabs');
@@ -1431,17 +1436,17 @@ function renderEvalResults(idx, data) {
   const ssrNum = supportingIndices.size;
   const ssrDen = res.cited_sentences.length;
 
-  // --- Compute CPR detail: which key phrases are "contributory" ---
-  // CPR measures whether key phrases are reflected in the *summary*.
-  // Word-level matching: all words of the phrase must appear in the summary.
-  const summaryLower = (res.summary || '').toLowerCase();
-  const phraseMatches = (res.key_phrases || []).map(p => {
-    const words = p.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-    const found = words.length > 0 && words.every(w => summaryLower.includes(w));
-    return {phrase: p, found};
+  // --- CPR detail: use contributory tokens returned by eval API ---
+  const contributorySet = new Set((data.contributory_kps || []).map(t => t.toLowerCase()));
+  // Tokenize each key phrase and check which tokens are contributory
+  const allTokens = [];
+  (res.key_phrases || []).forEach(p => {
+    p.split(/\s+/).filter(w => w.length > 0).forEach(token => {
+      allTokens.push({token, found: contributorySet.has(token.toLowerCase())});
+    });
   });
-  const cprNum = phraseMatches.filter(p => p.found).length;
-  const cprDen = phraseMatches.length;
+  const cprNum = allTokens.filter(t => t.found).length;
+  const cprDen = allTokens.length;
 
   return `
     <div class="eval-metrics" id="eval-metrics-${idx}">
@@ -1482,17 +1487,19 @@ function renderEvalResults(idx, data) {
       </div>
     ` : ''}
 
-    ${phraseMatches.length ? `
+    ${allTokens.length ? `
       <button class="eval-details-toggle" id="eval-toggle-cpr-${idx}" onclick="toggleEvalDetail('cpr',${idx})">
-        <span class="arrow">&#9654;</span> Phrase Coverage (${cprNum}/${cprDen} contributory)
+        <span class="arrow">&#9654;</span> Phrase Coverage (${cprNum}/${cprDen} tokens)
       </button>
       <div class="eval-details" id="eval-details-cpr-${idx}">
-        ${phraseMatches.map(p => `
-          <div class="eval-detail-item ${p.found ? 'edi-match' : 'edi-miss'}">
-            <span class="edi-icon">${p.found ? '&#10003;' : '&#10007;'}</span>
-            <span>${esc(p.phrase)}</span>
-          </div>
-        `).join('')}
+        <div style="display:flex;flex-wrap:wrap;gap:5px;padding:.3rem 0">
+          ${allTokens.map(t => `
+            <span class="phrase-chip" style="font-size:.74rem;${t.found
+              ? 'background:var(--green-light);color:var(--green);border-color:var(--green-border)'
+              : 'background:var(--surface2);color:var(--text3);border-color:var(--border2);text-decoration:line-through'
+            }">${esc(t.token)}</span>
+          `).join('')}
+        </div>
       </div>
     ` : ''}`;
 }
