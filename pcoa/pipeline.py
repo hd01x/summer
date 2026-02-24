@@ -60,7 +60,7 @@ class ArticleAnalysis:
     strategy: str = ""
 
 
-def run_intrinsic(abstract: str, aspect: MedicalAspect) -> AspectResult:
+def run_intrinsic(abstract: str, aspect: MedicalAspect, **llm_kwargs) -> AspectResult:
     """
     Run intrinsic context attribution strategy (§C.1).
     Single-step: generates summary, citations, and phrases together.
@@ -68,6 +68,7 @@ def run_intrinsic(abstract: str, aspect: MedicalAspect) -> AspectResult:
     Args:
         abstract: Raw abstract text
         aspect: Target medical aspect
+        **llm_kwargs: Forwarded to call_llm (model, api_key)
 
     Returns:
         AspectResult with all three components
@@ -81,7 +82,7 @@ def run_intrinsic(abstract: str, aspect: MedicalAspect) -> AspectResult:
     formatted = format_indexed_abstract(abstract)
     prompt = build_intrinsic_prompt(aspect, formatted)
 
-    raw = call_llm(prompt)
+    raw = call_llm(prompt, **llm_kwargs)
     result.raw_responses.append(raw)
 
     parsed = parse_intrinsic_response(raw)
@@ -96,7 +97,7 @@ def run_intrinsic(abstract: str, aspect: MedicalAspect) -> AspectResult:
     return result
 
 
-def run_prior(abstract: str, aspect: MedicalAspect) -> AspectResult:
+def run_prior(abstract: str, aspect: MedicalAspect, **llm_kwargs) -> AspectResult:
     """
     Run prior context attribution strategy (§C.3).
     Two-step: first retrieve sentences & phrases, then summarize.
@@ -105,6 +106,7 @@ def run_prior(abstract: str, aspect: MedicalAspect) -> AspectResult:
     Args:
         abstract: Raw abstract text
         aspect: Target medical aspect
+        **llm_kwargs: Forwarded to call_llm (model, api_key)
 
     Returns:
         AspectResult with all three components
@@ -119,7 +121,7 @@ def run_prior(abstract: str, aspect: MedicalAspect) -> AspectResult:
 
     # Step 1: Retrieve relevant sentences and extract key phrases
     step1_prompt = build_prior_step1_prompt(aspect, formatted)
-    step1_raw = call_llm(step1_prompt)
+    step1_raw = call_llm(step1_prompt, **llm_kwargs)
     result.raw_responses.append(step1_raw)
 
     indices, phrases = parse_prior_step1_response(step1_raw)
@@ -136,7 +138,7 @@ def run_prior(abstract: str, aspect: MedicalAspect) -> AspectResult:
     phrases_str = ", ".join(f'"{p}"' for p in phrases) if phrases else "N/A"
 
     step2_prompt = build_prior_step2_prompt(aspect, formatted_sents, phrases_str)
-    step2_raw = call_llm(step2_prompt)
+    step2_raw = call_llm(step2_prompt, **llm_kwargs)
     result.raw_responses.append(step2_raw)
 
     result.summary = parse_prior_step2_response(step2_raw)
@@ -147,7 +149,7 @@ def run_prior(abstract: str, aspect: MedicalAspect) -> AspectResult:
     return result
 
 
-def run_posthoc(abstract: str, aspect: MedicalAspect) -> AspectResult:
+def run_posthoc(abstract: str, aspect: MedicalAspect, **llm_kwargs) -> AspectResult:
     """
     Run post-hoc context attribution strategy (§C.4).
     Two-step: first summarize, then retrieve sentences & phrases.
@@ -155,6 +157,7 @@ def run_posthoc(abstract: str, aspect: MedicalAspect) -> AspectResult:
     Args:
         abstract: Raw abstract text
         aspect: Target medical aspect
+        **llm_kwargs: Forwarded to call_llm (model, api_key)
 
     Returns:
         AspectResult with all three components
@@ -169,7 +172,7 @@ def run_posthoc(abstract: str, aspect: MedicalAspect) -> AspectResult:
 
     # Step 1: Generate summary
     step1_prompt = build_posthoc_step1_prompt(aspect, formatted)
-    step1_raw = call_llm(step1_prompt)
+    step1_raw = call_llm(step1_prompt, **llm_kwargs)
     result.raw_responses.append(step1_raw)
 
     summary = parse_posthoc_step1_response(step1_raw)
@@ -181,7 +184,7 @@ def run_posthoc(abstract: str, aspect: MedicalAspect) -> AspectResult:
 
     # Step 2: Retrieve sentences and phrases for the summary
     step2_prompt = build_posthoc_step2_prompt(aspect, formatted, summary)
-    step2_raw = call_llm(step2_prompt)
+    step2_raw = call_llm(step2_prompt, **llm_kwargs)
     result.raw_responses.append(step2_raw)
 
     indices, phrases = parse_posthoc_step2_response(step2_raw)
@@ -207,6 +210,8 @@ def analyze_article(
     aspect_codes: Optional[List[str]] = None,
     strategy: str = "prior",
     progress_callback=None,
+    model: str = "",
+    api_key: str = "",
 ) -> ArticleAnalysis:
     """
     Run the full PCoA pipeline on an article.
@@ -218,6 +223,8 @@ def analyze_article(
         aspect_codes: List of aspect codes to analyze (default: all 16)
         strategy: Attribution strategy ("intrinsic", "prior", or "post-hoc")
         progress_callback: Optional callback(aspect_code, i, total) for progress
+        model: UI model name (e.g. "GPT-5.2") forwarded to call_llm
+        api_key: User-provided API key forwarded to call_llm
 
     Returns:
         Complete ArticleAnalysis
@@ -227,6 +234,12 @@ def analyze_article(
 
     strategy_fn = STRATEGIES[strategy]
     codes = aspect_codes or ASPECT_ORDER
+
+    llm_kwargs = {}
+    if model:
+        llm_kwargs["model"] = model
+    if api_key:
+        llm_kwargs["api_key"] = api_key
 
     analysis = ArticleAnalysis(
         pmid=pmid,
@@ -243,7 +256,7 @@ def analyze_article(
             progress_callback(code, i, len(codes))
 
         try:
-            aspect_result = strategy_fn(abstract, aspect)
+            aspect_result = strategy_fn(abstract, aspect, **llm_kwargs)
         except Exception as e:
             aspect_result = AspectResult(
                 aspect_code=code,

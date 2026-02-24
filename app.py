@@ -52,6 +52,8 @@ class AnalyzeRequest(BaseModel):
     abstract: str
     aspects: List[str]
     strategy: str = "prior"
+    model: str = ""
+    api_key: str = ""
 
 class SentenceOut(BaseModel):
     index: int
@@ -163,6 +165,8 @@ async def analyze(req: AnalyzeRequest) -> AnalysisOut:
             title=req.title,
             aspect_codes=req.aspects,
             strategy=req.strategy,
+            model=req.model,
+            api_key=req.api_key,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

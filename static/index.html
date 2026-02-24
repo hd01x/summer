@@ -1641,6 +1641,8 @@ async function runPipeline() {
     const result = await api('/api/analyze', {
       pmid: a.pmid, title: a.title, abstract: a.abstract,
       aspects: missing, strategy: state.strategy,
+      model: document.getElementById('model_name').value,
+      api_key: document.getElementById('api-key').value,
     });
     clearInterval(progressTimer);
 

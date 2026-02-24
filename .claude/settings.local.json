@@ -3,7 +3,9 @@
     "allow": [
       "Bash(cd:*)",
       "Bash(curl:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(git branch:*)",
+      "Bash(cd /c/Users/hendr/pcoa && git merge origin/bohao 2>&1)"
     ]
   }
 }

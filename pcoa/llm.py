@@ -1,16 +1,26 @@
 """
-OpenAI LLM client for PCoA pipeline.
-Handles API calls and response parsing.
+LLM client for PCoA pipeline.
+Supports OpenAI, Anthropic, and xAI (OpenAI-compatible) providers.
 """
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
+import anthropic
 from openai import OpenAI
 
 from pcoa.config import OPENAI_API_KEY, OPENAI_MODEL, TEMPERATURE
+
+# Model registry: UI name -> (provider, model_id, base_url)
+MODEL_REGISTRY = {
+    "GPT-5.1":  ("openai",    "gpt-4.1",               None),
+    "GPT-5.2":  ("openai",    "gpt-4.1",               None),
+    "Opus-4.6": ("anthropic", "claude-opus-4-20250514", None),
+    "Grok-4.1": ("openai",    "grok-3",                "https://api.x.ai/v1"),
+}
 
 
 @dataclass
@@ -22,33 +32,64 @@ class LLMResponse:
     raw_response: str = ""
 
 
-def get_client() -> OpenAI:
-    """Create and return an OpenAI client."""
-    if not OPENAI_API_KEY:
-        raise ValueError("OPENAI_API_KEY not set in .env file")
-    return OpenAI(api_key=OPENAI_API_KEY)
-
-
-def call_llm(prompt: str, model: str = OPENAI_MODEL, temperature: float = TEMPERATURE) -> str:
+def call_llm(prompt: str, model: str = "", temperature: float = TEMPERATURE, api_key: str = "") -> str:
     """
-    Call the OpenAI API with the given prompt.
+    Call an LLM provider with the given prompt.
 
     Args:
         prompt: The prompt string
-        model: Model name (default: GPT-4o)
+        model: UI model name (e.g. "GPT-5.2") or raw model ID for backward compat
         temperature: Sampling temperature (default: 0.7, as in paper §5.1)
+        api_key: User-provided API key (falls back to env vars if empty)
 
     Returns:
         Raw response text from the model
     """
-    client = get_client()
+    registry_entry = MODEL_REGISTRY.get(model)
+
+    if registry_entry:
+        provider, model_id, base_url = registry_entry
+    else:
+        # Backward compat: treat as raw OpenAI model ID
+        provider = "openai"
+        model_id = model if model else OPENAI_MODEL
+        base_url = None
+
+    if provider == "anthropic":
+        return _call_anthropic(prompt, model_id, temperature, api_key)
+    else:
+        return _call_openai(prompt, model_id, temperature, api_key, base_url)
+
+
+def _call_openai(prompt: str, model_id: str, temperature: float, api_key: str, base_url: Optional[str]) -> str:
+    key = api_key or OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
+    if not key:
+        raise ValueError("No API key provided. Enter your OpenAI API key or set OPENAI_API_KEY in .env")
+    kwargs = {"api_key": key}
+    if base_url:
+        kwargs["base_url"] = base_url
+    client = OpenAI(**kwargs)
     response = client.chat.completions.create(
-        model=model,
+        model=model_id,
         messages=[{"role": "user", "content": prompt}],
         temperature=temperature,
         max_tokens=2048,
     )
     return response.choices[0].message.content.strip()
+
+
+def _call_anthropic(prompt: str, model_id: str, temperature: float, api_key: str) -> str:
+    key = api_key or os.getenv("ANTHROPIC_API_KEY", "")
+    if not key:
+        raise ValueError("No API key provided. Enter your Anthropic API key or set ANTHROPIC_API_KEY in .env")
+    client = anthropic.Anthropic(api_key=key)
+    response = client.messages.create(
+        model=model_id,
+        max_tokens=2048,
+        temperature=temperature,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return response.content[0].text.strip()
 
 
 def parse_intrinsic_response(raw: str) -> LLMResponse:
