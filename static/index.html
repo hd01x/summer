@@ -37,7 +37,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);
 /* ========================================================================= */
 /*  LAYOUT                                                                    */
 /* ========================================================================= */
-.container{max-width:1280px;margin:0 auto;padding:0 2rem}
+.container{max-width:1680px;margin:0 auto;padding:0 2rem}
 @media(max-width:768px){.container{padding:0 1rem}}
 
 /* ========================================================================= */
@@ -106,8 +106,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);
 /*  MAIN GRID                                                                 */
 /* ========================================================================= */
 .main{padding:1.5rem 0 4rem}
-.grid{display:grid;grid-template-columns:380px 1fr;gap:1.5rem;align-items:start}
-@media(max-width:1024px){.grid{grid-template-columns:1fr}}
+.grid{display:grid;grid-template-columns:340px 1fr 340px;gap:1.2rem;align-items:start}
+@media(max-width:1200px){.grid{grid-template-columns:340px 1fr}}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
 
 /* ========================================================================= */
 /*  PANELS                                                                    */
@@ -378,6 +379,46 @@ select{cursor:pointer;appearance:none;
 
 .hidden{display:none!important}
 
+/* PDF dropzone */
+.pdf-dropzone{
+  border:2px dashed var(--border2);border-radius:var(--radius);
+  padding:2rem 1.5rem;text-align:center;cursor:pointer;
+  transition:var(--transition);position:relative;
+  background:var(--surface2);color:var(--text2);
+}
+.pdf-dropzone:hover,.pdf-dropzone.dragover{
+  border-color:var(--primary);background:var(--primary-light);color:var(--primary);
+}
+.pdf-dropzone input[type="file"]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;
+}
+.pdf-dropzone .drop-icon{font-size:2rem;margin-bottom:.5rem;opacity:.5}
+.pdf-dropzone .drop-label{font-size:.82rem;font-weight:600}
+.pdf-dropzone .drop-hint{font-size:.7rem;color:var(--text3);margin-top:.25rem}
+.pdf-filename{
+  font-size:.78rem;font-weight:600;color:var(--green);
+  margin-top:.6rem;display:flex;align-items:center;gap:6px;
+}
+
+/* Fulltext / truncated badges */
+.badge-fulltext{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 10px;border-radius:12px;font-size:.68rem;font-weight:700;
+  background:var(--green-light);color:var(--green);border:1px solid var(--green-border);
+  text-transform:uppercase;letter-spacing:.04em;
+}
+.badge-truncated{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 10px;border-radius:12px;font-size:.68rem;font-weight:700;
+  background:var(--amber-light);color:var(--amber);border:1px solid #fbbf24;
+  text-transform:uppercase;letter-spacing:.04em;
+}
+.badge-wordcount{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 10px;border-radius:12px;font-size:.68rem;font-weight:600;
+  background:var(--surface2);color:var(--text3);border:1px solid var(--border);
+}
+
 /* Strategy info tooltip */
 .strategy-info-bar{
   font-size:.72rem;color:var(--text3);padding:.5rem 1.25rem;
@@ -411,10 +452,9 @@ select{cursor:pointer;appearance:none;
 .eval-btn.loading .eval-btn-label{display:none}
 
 .eval-metrics{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;
+  display:grid;grid-template-columns:1fr;gap:.6rem;
   margin-bottom:1rem;
 }
-@media(max-width:640px){.eval-metrics{grid-template-columns:1fr}}
 
 @keyframes evalFadeIn{
   from{opacity:0;transform:translateY(10px)}
@@ -498,6 +538,38 @@ select{cursor:pointer;appearance:none;
   border-radius:5px;font-size:.65rem;font-weight:700;
   font-family:var(--mono);margin-right:3px;
 }
+
+/* Evaluation right column */
+.eval-col{position:sticky;top:12px}
+.eval-placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:2.5rem 1.5rem;text-align:center;color:var(--text3);min-height:200px;
+}
+.eval-placeholder .ep-icon{font-size:2.2rem;margin-bottom:.7rem;opacity:.35}
+.eval-placeholder h3{font-size:.88rem;font-weight:700;color:var(--text2);margin-bottom:.3rem}
+.eval-placeholder p{font-size:.78rem;line-height:1.5;max-width:260px}
+.eval-aspect-label{
+  font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--text3);padding:.7rem 1.1rem;border-bottom:1px solid var(--border);
+  background:var(--surface2);
+}
+.eval-panel-body{padding:1rem 1.1rem}
+.eval-all-wrap{padding:.6rem 1.1rem;border-top:1px solid var(--border)}
+.eval-all-btn{
+  width:100%;padding:8px 0;font-size:.78rem;font-weight:600;font-family:var(--font);
+  border:1.5px solid var(--primary);border-radius:var(--radius-sm);
+  background:transparent;color:var(--primary);cursor:pointer;
+  transition:var(--transition);display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.eval-all-btn:hover{background:var(--primary-light)}
+.eval-all-btn:disabled{opacity:.5;cursor:not-allowed}
+.eval-all-btn .eval-spinner{
+  display:none;width:14px;height:14px;border:2px solid var(--border);
+  border-top-color:var(--primary);border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+.eval-all-btn.loading .eval-spinner{display:inline-block}
+.eval-all-btn.loading .eval-btn-label{display:none}
 </style>
 </head>
 <body>
@@ -540,6 +612,8 @@ select{cursor:pointer;appearance:none;
           <div class="mode-tabs">
             <button class="mode-tab active" data-mode="search" onclick="setMode('search')">PubMed Search</button>
             <button class="mode-tab" data-mode="pmid" onclick="setMode('pmid')">PMID Lookup</button>
+            <button class="mode-tab" data-mode="pmc" onclick="setMode('pmc')">PMC Fulltext</button>
+            <button class="mode-tab" data-mode="pdf" onclick="setMode('pdf')">Upload PDF</button>
             <button class="mode-tab" data-mode="paste" onclick="setMode('paste')">Paste Abstract</button>
           </div>
 
@@ -569,6 +643,35 @@ select{cursor:pointer;appearance:none;
                 <button class="toolbar-btn primary" onclick="doFetchPMID()">Fetch</button>
               </div>
             </div>
+          </div>
+
+          <!-- PMC Fulltext mode -->
+          <div id="mode-pmc" class="hidden">
+            <div class="input-group">
+              <label>PMC ID</label>
+              <div class="input-row">
+                <input type="text" id="pmc-input" placeholder="e.g. PMC7096066 or 7096066"/>
+                <button class="toolbar-btn primary" onclick="doFetchPMC()">Fetch Fulltext</button>
+              </div>
+            </div>
+            <div style="font-size:.7rem;color:var(--text3);line-height:1.5">
+              Enter a PubMed Central ID. Only Open Access articles are available via the BioC API.
+            </div>
+          </div>
+
+          <!-- PDF Upload mode -->
+          <div id="mode-pdf" class="hidden">
+            <div class="pdf-dropzone" id="pdf-dropzone">
+              <input type="file" accept=".pdf" id="pdf-file-input" onchange="handlePDFSelect(this.files)"/>
+              <div class="drop-icon">&#128196;</div>
+              <div class="drop-label">Drop a PDF here or click to browse</div>
+              <div class="drop-hint">Max 20 MB &middot; Text-based PDFs only</div>
+            </div>
+            <div class="pdf-filename hidden" id="pdf-filename"></div>
+            <button class="toolbar-btn primary hidden" id="pdf-upload-btn"
+                    style="width:100%;margin-top:.6rem" onclick="doUploadPDF()">
+              Upload &amp; Extract Text
+            </button>
           </div>
 
           <!-- Paste mode -->
@@ -645,6 +748,7 @@ select{cursor:pointer;appearance:none;
           <div style="flex:1;min-width:200px">
             <div style="font-size:.82rem;font-weight:700;color:var(--text)" id="sel-title"></div>
             <div style="font-size:.7rem;color:var(--text3)" id="sel-meta"></div>
+            <div style="display:flex;gap:.4rem;margin-top:.3rem;flex-wrap:wrap" id="sel-fulltext-badge"></div>
           </div>
           <button class="toolbar-btn primary" id="run-btn" onclick="runPipeline()">
             ▶ &nbsp;Run PCoA Pipeline
@@ -674,11 +778,40 @@ select{cursor:pointer;appearance:none;
       <!-- Source abstract panel -->
       <div class="panel" id="abstract-panel" style="display:none;margin-top:1.2rem">
         <div class="panel-header">
-          <h2>Source Abstract</h2>
+          <h2 id="abstract-panel-title">Source Abstract</h2>
           <span class="count" id="sent-count">0 sentences</span>
         </div>
         <div class="panel-body flush">
           <div class="abstract-viewer" id="abstract-viewer"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!--  RIGHT PANEL — EVALUATION                                           -->
+    <!-- ================================================================== -->
+    <div class="eval-col">
+      <div class="panel" id="eval-panel">
+        <div class="panel-header">
+          <h2>Evaluation</h2>
+          <span class="count" id="eval-panel-badge">ECR / SSR / CPR</span>
+        </div>
+        <!-- placeholder when no results -->
+        <div class="eval-placeholder" id="eval-placeholder">
+          <div class="ep-icon">&#128202;</div>
+          <h3>No Results Yet</h3>
+          <p>Run the PCoA pipeline first, then evaluate each aspect's summary quality here.</p>
+        </div>
+        <!-- actual eval content (hidden initially) -->
+        <div id="eval-content" style="display:none">
+          <div class="eval-aspect-label" id="eval-aspect-label"></div>
+          <div class="eval-panel-body" id="eval-panel-body"></div>
+          <div class="eval-all-wrap">
+            <button class="eval-all-btn" id="eval-all-btn" onclick="runAllEvaluations()">
+              <span class="eval-spinner"></span>
+              <span class="eval-btn-label">Evaluate All Aspects</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -748,6 +881,18 @@ let state = {
 document.addEventListener('DOMContentLoaded', () => {
   renderAspectGrid();
   updateAspectCount();
+
+  // PDF drag-and-drop setup
+  const dropzone = document.getElementById('pdf-dropzone');
+  if (dropzone) {
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handlePDFSelect(e.dataTransfer.files);
+    });
+  }
 });
 
 /* ========================================================================= */
@@ -756,7 +901,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setMode(mode) {
   state.mode = mode;
   document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
-  ['search','pmid','paste'].forEach(m => {
+  ['search','pmid','pmc','pdf','paste'].forEach(m => {
     document.getElementById('mode-' + m).classList.toggle('hidden', m !== mode);
   });
 }
@@ -876,6 +1021,72 @@ function doPaste() {
 }
 
 /* ========================================================================= */
+/*  PMC FULLTEXT FETCH                                                        */
+/* ========================================================================= */
+async function doFetchPMC() {
+  const pmcId = document.getElementById('pmc-input').value.trim();
+  if (!pmcId) return showToast('Enter a PMC ID', 'error');
+  showProgress('Fetching Fulltext', `Loading ${pmcId} from PubMed Central…`);
+  try {
+    const article = await api('/api/fetch-pmc', {pmc_id: pmcId});
+    article._isFulltext = true;
+    state.articles = [article];
+    state.selectedArticle = article;
+    state.analysis = null;
+    hideProgress();
+    renderArticleList();
+    selectArticle(0);
+    showToast(`Fulltext loaded — ${article.word_count.toLocaleString()} words`, 'success');
+  } catch (e) {
+    hideProgress();
+    showToast(e.message, 'error');
+  }
+}
+
+/* ========================================================================= */
+/*  PDF UPLOAD                                                                */
+/* ========================================================================= */
+let selectedPDFFile = null;
+
+function handlePDFSelect(files) {
+  if (!files || !files.length) return;
+  selectedPDFFile = files[0];
+  const nameEl = document.getElementById('pdf-filename');
+  const btnEl = document.getElementById('pdf-upload-btn');
+  nameEl.textContent = selectedPDFFile.name;
+  nameEl.classList.remove('hidden');
+  btnEl.classList.remove('hidden');
+}
+
+async function doUploadPDF() {
+  if (!selectedPDFFile) return showToast('Select a PDF file first', 'error');
+  showProgress('Extracting Text', `Processing ${selectedPDFFile.name}…`);
+  try {
+    const formData = new FormData();
+    formData.append('file', selectedPDFFile);
+    const res = await fetch('/api/upload-pdf', {method: 'POST', body: formData});
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({detail: res.statusText}));
+      throw new Error(err.detail || 'Upload failed');
+    }
+    const article = await res.json();
+    article._isFulltext = true;
+    state.articles = [article];
+    state.selectedArticle = article;
+    state.analysis = null;
+    hideProgress();
+    renderArticleList();
+    selectArticle(0);
+    const msg = `PDF text extracted — ${article.word_count.toLocaleString()} words`
+      + (article.is_truncated ? ' (truncated)' : '');
+    showToast(msg, 'success');
+  } catch (e) {
+    hideProgress();
+    showToast(e.message, 'error');
+  }
+}
+
+/* ========================================================================= */
 /*  ARTICLE LIST                                                              */
 /* ========================================================================= */
 function renderArticleList() {
@@ -906,6 +1117,9 @@ function selectArticle(idx) {
   renderAbstract();
   document.getElementById('results-content').style.display = 'none';
   document.getElementById('results-placeholder').style.display = '';
+  // Reset eval panel
+  document.getElementById('eval-placeholder').style.display = '';
+  document.getElementById('eval-content').style.display = 'none';
 }
 
 function showSelectedBar() {
@@ -918,6 +1132,20 @@ function showSelectedBar() {
   if (a.journal) parts.push(a.journal);
   if (a.authors?.length) parts.push(a.authors.slice(0,3).join(', ') + (a.authors.length > 3 ? ' et al.' : ''));
   document.getElementById('sel-meta').textContent = parts.join(' · ');
+
+  // Fulltext badges
+  const badgeEl = document.getElementById('sel-fulltext-badge');
+  let badges = '';
+  if (a.is_fulltext || a._isFulltext) {
+    badges += '<span class="badge-fulltext">Fulltext</span>';
+  }
+  if (a.is_truncated) {
+    badges += '<span class="badge-truncated">Truncated</span>';
+  }
+  if (a.word_count) {
+    badges += `<span class="badge-wordcount">${a.word_count.toLocaleString()} words</span>`;
+  }
+  badgeEl.innerHTML = badges;
 }
 
 function renderAbstract(highlightIndices, highlightPhrases) {
@@ -925,6 +1153,8 @@ function renderAbstract(highlightIndices, highlightPhrases) {
   const panel = document.getElementById('abstract-panel');
   if (!a) { panel.style.display = 'none'; return; }
   panel.style.display = '';
+  document.getElementById('abstract-panel-title').textContent =
+    (a.is_fulltext || a._isFulltext) ? 'Source Fulltext' : 'Source Abstract';
   // Use backend-indexed sentences if analysis is available, else fallback to client-side split
   let sents;
   if (state.analysis && state.analysis.sentences && state.analysis.sentences.length) {
@@ -1017,6 +1247,9 @@ function renderResults() {
   // Panels
   renderResultPanel(0);
   state.activeResultTab = 0;
+
+  // Initialize eval panel for first aspect
+  renderEvalPanel(0);
 }
 
 function switchResultTab(idx) {
@@ -1072,33 +1305,49 @@ function renderResultPanel(idx) {
           ${!res.key_phrases.length ? '<span style="color:var(--text3);font-size:.8rem">No phrases extracted</span>' : ''}
         </div>
       </div>
-
-      <!-- EVALUATION METRICS -->
-      <div class="eval-section">
-        <div class="section-label"><span class="dot" style="background:var(--green)"></span> Evaluation Metrics</div>
-        <div id="eval-container-${idx}">
-          ${state.evaluations[idx] ? renderEvalResults(idx, state.evaluations[idx]) : renderEvalButton(idx)}
-        </div>
-      </div>
     </div>
   `;
 
-  // If cached eval exists, animate bars after DOM insert
-  if (state.evaluations[idx]) {
-    requestAnimationFrame(() => animateEvalMetrics(idx, state.evaluations[idx]));
-  }
-
   // Update abstract viewer with highlights for this aspect
   renderAbstract(res.sentence_indices, res.key_phrases);
+
+  // Update the evaluation right panel for this aspect
+  renderEvalPanel(idx);
 }
 
 /* ========================================================================= */
-/*  EVALUATION                                                                */
+/*  EVALUATION (RIGHT PANEL)                                                  */
 /* ========================================================================= */
+function renderEvalPanel(idx) {
+  const placeholder = document.getElementById('eval-placeholder');
+  const content = document.getElementById('eval-content');
+  const body = document.getElementById('eval-panel-body');
+  const label = document.getElementById('eval-aspect-label');
+
+  if (!state.analysis || !state.analysis.results.length) {
+    placeholder.style.display = '';
+    content.style.display = 'none';
+    return;
+  }
+
+  placeholder.style.display = 'none';
+  content.style.display = '';
+
+  const res = state.analysis.results[idx];
+  label.textContent = `${res.aspect_code}: ${res.aspect_name}`;
+
+  if (state.evaluations[idx]) {
+    body.innerHTML = renderEvalResults(idx, state.evaluations[idx]);
+    requestAnimationFrame(() => animateEvalMetrics(idx, state.evaluations[idx]));
+  } else {
+    body.innerHTML = renderEvalButton(idx);
+  }
+}
+
 function renderEvalButton(idx) {
-  return `<button class="eval-btn" id="eval-btn-${idx}" onclick="runEvaluation(${idx})">
+  return `<button class="eval-btn" id="eval-btn-${idx}" onclick="runEvaluation(${idx})" style="width:100%">
     <span class="eval-spinner"></span>
-    <span class="eval-btn-label">Evaluate Quality</span>
+    <span class="eval-btn-label">Evaluate This Aspect</span>
   </button>`;
 }
 
@@ -1144,8 +1393,7 @@ function renderMetricCard(type, label, fullName, value, idx) {
 async function runEvaluation(idx) {
   const res = state.analysis.results[idx];
   const btn = document.getElementById(`eval-btn-${idx}`);
-  btn.classList.add('loading');
-  btn.disabled = true;
+  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
 
   try {
     const data = await api('/api/evaluate', {
@@ -1154,14 +1402,50 @@ async function runEvaluation(idx) {
       kps: res.key_phrases,
     });
     state.evaluations[idx] = data;
-    const container = document.getElementById(`eval-container-${idx}`);
-    container.innerHTML = renderEvalResults(idx, data);
-    requestAnimationFrame(() => animateEvalMetrics(idx, data));
+    // Re-render if this is still the active tab
+    if (state.activeResultTab === idx) {
+      renderEvalPanel(idx);
+    }
   } catch (e) {
-    btn.classList.remove('loading');
-    btn.disabled = false;
+    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
     showToast('Evaluation failed: ' + e.message, 'error');
   }
+}
+
+async function runAllEvaluations() {
+  if (!state.analysis || !state.analysis.results.length) return;
+  const btn = document.getElementById('eval-all-btn');
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  let success = 0;
+  let fail = 0;
+  for (let i = 0; i < state.analysis.results.length; i++) {
+    if (state.evaluations[i]) { success++; continue; } // already cached
+    const res = state.analysis.results[i];
+    try {
+      const data = await api('/api/evaluate', {
+        summary: res.summary,
+        sentences: res.cited_sentences.map(s => s.text),
+        kps: res.key_phrases,
+      });
+      state.evaluations[i] = data;
+      // Update panel if viewing this aspect
+      if (state.activeResultTab === i) renderEvalPanel(i);
+    } catch (e) {
+      fail++;
+    }
+  }
+
+  btn.classList.remove('loading');
+  btn.disabled = false;
+  if (fail) {
+    showToast(`Evaluated ${success} aspects, ${fail} failed`, 'error');
+  } else {
+    showToast(`All ${state.analysis.results.length} aspects evaluated`, 'success');
+  }
+  // Refresh current view
+  renderEvalPanel(state.activeResultTab);
 }
 
 function animateEvalMetrics(idx, data) {

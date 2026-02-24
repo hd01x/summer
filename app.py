@@ -8,7 +8,7 @@ import os
 from typing import List, Optional
 
 import requests as http_requests
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -17,6 +17,7 @@ from pcoa.config import MEDICAL_ASPECTS, ASPECT_ORDER
 from pcoa.pubmed import search_and_fetch, fetch_single_article, PubMedArticle
 from pcoa.text_processing import index_sentences
 from pcoa.pipeline import analyze_article, AspectResult
+from pcoa.fulltext import fetch_pmc_fulltext, extract_pdf_text
 
 app = FastAPI(title="PCoA", version="1.0.0")
 
@@ -29,6 +30,9 @@ class SearchRequest(BaseModel):
 class PMIDRequest(BaseModel):
     pmid: str
 
+class PMCRequest(BaseModel):
+    pmc_id: str
+
 class ArticleOut(BaseModel):
     pmid: str
     title: str
@@ -37,6 +41,9 @@ class ArticleOut(BaseModel):
     journal: str
     pub_date: str
     doi: str
+    is_fulltext: bool = False
+    is_truncated: bool = False
+    word_count: int = 0
 
 class AnalyzeRequest(BaseModel):
     pmid: str
@@ -173,7 +180,58 @@ async def analyze(req: AnalyzeRequest) -> AnalysisOut:
         results=results,
     )
 
-EVAL_API_URL = "http://34.32.24.46:8000"
+@app.post("/api/fetch-pmc")
+async def fetch_pmc(req: PMCRequest) -> ArticleOut:
+    try:
+        ft = fetch_pmc_fulltext(req.pmc_id.strip())
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return ArticleOut(
+        pmid=ft.pmc_id,
+        title=ft.title,
+        abstract=ft.text,
+        authors=ft.authors,
+        journal=ft.journal,
+        pub_date=ft.pub_date,
+        doi=ft.doi,
+        is_fulltext=True,
+        is_truncated=ft.is_truncated,
+        word_count=ft.word_count,
+    )
+
+_MAX_PDF_SIZE = 20 * 1024 * 1024  # 20 MB
+
+@app.post("/api/upload-pdf")
+async def upload_pdf(file: UploadFile = File(...)) -> ArticleOut:
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only .pdf files are accepted")
+    contents = await file.read()
+    if len(contents) > _MAX_PDF_SIZE:
+        raise HTTPException(status_code=400, detail="File exceeds 20 MB limit")
+    try:
+        ft = extract_pdf_text(contents)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"PDF extraction failed: {e}")
+    if not ft.text.strip():
+        raise HTTPException(status_code=422, detail="No text could be extracted from this PDF")
+    return ArticleOut(
+        pmid=f"pdf-{file.filename}",
+        title=ft.title,
+        abstract=ft.text,
+        authors=ft.authors,
+        journal=ft.journal,
+        pub_date=ft.pub_date,
+        doi=ft.doi,
+        is_fulltext=True,
+        is_truncated=ft.is_truncated,
+        word_count=ft.word_count,
+    )
+
+EVAL_API_URL = os.environ.get("EVAL_API_URL", "http://34.32.24.46:8000")
 
 @app.post("/api/evaluate")
 async def evaluate(req: EvaluateRequest) -> EvaluateResponse:
