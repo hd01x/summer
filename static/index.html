@@ -384,6 +384,120 @@ select{cursor:pointer;appearance:none;
   background:var(--surface2);border-bottom:1px solid var(--border);
   display:flex;align-items:center;gap:6px;
 }
+
+/* ========================================================================= */
+/*  EVALUATION METRICS                                                       */
+/* ========================================================================= */
+.eval-section{
+  margin-top:1.5rem;padding-top:1.5rem;
+  border-top:1px dashed var(--border2);
+}
+.eval-section .section-label{margin-bottom:.8rem}
+.eval-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 22px;font-size:.82rem;font-weight:600;font-family:var(--font);
+  border:1.5px solid var(--primary);border-radius:var(--radius);
+  background:transparent;color:var(--primary);cursor:pointer;
+  transition:var(--transition);
+}
+.eval-btn:hover{background:var(--primary-light)}
+.eval-btn:disabled{opacity:.55;cursor:not-allowed}
+.eval-btn .eval-spinner{
+  display:none;width:16px;height:16px;border:2px solid var(--border);
+  border-top-color:var(--primary);border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+.eval-btn.loading .eval-spinner{display:inline-block}
+.eval-btn.loading .eval-btn-label{display:none}
+
+.eval-metrics{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;
+  margin-bottom:1rem;
+}
+@media(max-width:640px){.eval-metrics{grid-template-columns:1fr}}
+
+@keyframes evalFadeIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.metric-card{
+  border-radius:var(--radius);padding:1rem 1.1rem;
+  border:1px solid var(--border);
+  animation:evalFadeIn .4s ease both;
+}
+.metric-card:nth-child(1){animation-delay:.05s}
+.metric-card:nth-child(2){animation-delay:.15s}
+.metric-card:nth-child(3){animation-delay:.25s}
+.metric-card .metric-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:.55rem;
+}
+.metric-card .metric-abbr{
+  font-size:.7rem;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;padding:2px 8px;border-radius:6px;
+}
+.metric-card .metric-value{
+  font-size:1.3rem;font-weight:800;font-family:var(--mono);
+}
+.metric-card .metric-name{
+  font-size:.68rem;color:var(--text3);margin-bottom:.55rem;
+}
+.metric-card .metric-bar-track{
+  height:5px;border-radius:3px;background:var(--surface2);overflow:hidden;
+}
+.metric-card .metric-bar-fill{
+  height:100%;border-radius:3px;width:0%;transition:width .8s cubic-bezier(.4,0,.2,1);
+}
+
+/* ECR = green */
+.metric-card.metric-ecr{background:var(--green-light);border-color:var(--green-border)}
+.metric-card.metric-ecr .metric-abbr{background:var(--green);color:#fff}
+.metric-card.metric-ecr .metric-value{color:var(--green)}
+.metric-card.metric-ecr .metric-bar-fill{background:var(--green)}
+
+/* SSR = blue */
+.metric-card.metric-ssr{background:var(--blue-light);border-color:#7dd3fc}
+.metric-card.metric-ssr .metric-abbr{background:var(--blue);color:#fff}
+.metric-card.metric-ssr .metric-value{color:var(--blue)}
+.metric-card.metric-ssr .metric-bar-fill{background:var(--blue)}
+
+/* CPR = purple */
+.metric-card.metric-cpr{background:var(--accent-light);border-color:#d8b4fe}
+.metric-card.metric-cpr .metric-abbr{background:var(--accent);color:#fff}
+.metric-card.metric-cpr .metric-value{color:var(--accent)}
+.metric-card.metric-cpr .metric-bar-fill{background:var(--accent)}
+
+/* Details toggle */
+.eval-details-toggle{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:.75rem;font-weight:600;color:var(--text2);
+  cursor:pointer;border:none;background:none;font-family:var(--font);
+  padding:4px 0;transition:var(--transition);
+}
+.eval-details-toggle:hover{color:var(--primary)}
+.eval-details-toggle .arrow{
+  display:inline-block;transition:transform .2s ease;font-size:.6rem;
+}
+.eval-details-toggle.open .arrow{transform:rotate(90deg)}
+
+.eval-details{
+  display:none;margin-top:.6rem;
+}
+.eval-details.open{display:block}
+
+.claim-item{
+  padding:.7rem 1rem;border-radius:var(--radius-sm);
+  border-left:3px solid var(--green);background:var(--green-light);
+  margin-bottom:.4rem;font-size:.82rem;line-height:1.6;
+}
+.claim-item .claim-text{font-weight:500;color:var(--text);margin-bottom:.25rem}
+.claim-item .claim-sents{font-size:.72rem;color:var(--text3)}
+.claim-item .claim-sents .sent-ref{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:20px;height:20px;background:var(--green);color:#fff;
+  border-radius:5px;font-size:.65rem;font-weight:700;
+  font-family:var(--mono);margin-right:3px;
+}
 </style>
 </head>
 <body>
@@ -625,6 +739,7 @@ let state = {
   selectedArticle: null,
   analysis: null,
   activeResultTab: 0,
+  evaluations: {},
 };
 
 /* ========================================================================= */
@@ -785,6 +900,7 @@ function renderArticleList() {
 function selectArticle(idx) {
   state.selectedArticle = state.articles[idx];
   state.analysis = null;
+  state.evaluations = {};
   renderArticleList();
   showSelectedBar();
   renderAbstract();
@@ -837,6 +953,7 @@ async function runPipeline() {
   if (!a) return showToast('Select an article first', 'error');
   const aspects = [...state.selectedAspects];
   if (!aspects.length) return showToast('Select at least one aspect', 'error');
+  state.evaluations = {};
   const btn = document.getElementById('run-btn');
   btn.disabled = true;
   showProgress('Running PCoA Pipeline',
@@ -955,11 +1072,123 @@ function renderResultPanel(idx) {
           ${!res.key_phrases.length ? '<span style="color:var(--text3);font-size:.8rem">No phrases extracted</span>' : ''}
         </div>
       </div>
+
+      <!-- EVALUATION METRICS -->
+      <div class="eval-section">
+        <div class="section-label"><span class="dot" style="background:var(--green)"></span> Evaluation Metrics</div>
+        <div id="eval-container-${idx}">
+          ${state.evaluations[idx] ? renderEvalResults(idx, state.evaluations[idx]) : renderEvalButton(idx)}
+        </div>
+      </div>
     </div>
   `;
 
+  // If cached eval exists, animate bars after DOM insert
+  if (state.evaluations[idx]) {
+    requestAnimationFrame(() => animateEvalMetrics(idx, state.evaluations[idx]));
+  }
+
   // Update abstract viewer with highlights for this aspect
   renderAbstract(res.sentence_indices, res.key_phrases);
+}
+
+/* ========================================================================= */
+/*  EVALUATION                                                                */
+/* ========================================================================= */
+function renderEvalButton(idx) {
+  return `<button class="eval-btn" id="eval-btn-${idx}" onclick="runEvaluation(${idx})">
+    <span class="eval-spinner"></span>
+    <span class="eval-btn-label">Evaluate Quality</span>
+  </button>`;
+}
+
+function renderEvalResults(idx, data) {
+  return `
+    <div class="eval-metrics" id="eval-metrics-${idx}">
+      ${renderMetricCard('ecr', 'ECR', 'Evidence Claim Recall', data.ecr, idx)}
+      ${renderMetricCard('ssr', 'SSR', 'Supportive Sentence Recall', data.ssr, idx)}
+      ${renderMetricCard('cpr', 'CPR', 'Contributory Phrase Recall', data.cpr, idx)}
+    </div>
+    ${data.details && data.details.length ? `
+      <button class="eval-details-toggle" id="eval-toggle-${idx}" onclick="toggleClaimDetails(${idx})">
+        <span class="arrow">&#9654;</span> Claim Decomposition (${data.details.length} claims)
+      </button>
+      <div class="eval-details" id="eval-details-${idx}">
+        ${data.details.map(d => `
+          <div class="claim-item">
+            <div class="claim-text">${esc(d.claim)}</div>
+            <div class="claim-sents">
+              Supported by: ${d.sentences.length ? d.sentences.map(s =>
+                `<span class="sent-ref">${s}</span>`).join('') : '<em>no sentences</em>'}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}`;
+}
+
+function renderMetricCard(type, label, fullName, value, idx) {
+  return `
+    <div class="metric-card metric-${type}">
+      <div class="metric-header">
+        <span class="metric-abbr">${label}</span>
+        <span class="metric-value">${esc(value)}</span>
+      </div>
+      <div class="metric-name">${fullName}</div>
+      <div class="metric-bar-track">
+        <div class="metric-bar-fill" id="bar-${type}-${idx}"></div>
+      </div>
+    </div>`;
+}
+
+async function runEvaluation(idx) {
+  const res = state.analysis.results[idx];
+  const btn = document.getElementById(`eval-btn-${idx}`);
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    const data = await api('/api/evaluate', {
+      summary: res.summary,
+      sentences: res.cited_sentences.map(s => s.text),
+      kps: res.key_phrases,
+    });
+    state.evaluations[idx] = data;
+    const container = document.getElementById(`eval-container-${idx}`);
+    container.innerHTML = renderEvalResults(idx, data);
+    requestAnimationFrame(() => animateEvalMetrics(idx, data));
+  } catch (e) {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    showToast('Evaluation failed: ' + e.message, 'error');
+  }
+}
+
+function animateEvalMetrics(idx, data) {
+  requestAnimationFrame(() => {
+    ['ecr', 'ssr', 'cpr'].forEach(type => {
+      const bar = document.getElementById(`bar-${type}-${idx}`);
+      if (bar) bar.style.width = (parseMetricRatio(data[type]) * 100) + '%';
+    });
+  });
+}
+
+function parseMetricRatio(str) {
+  if (!str) return 0;
+  const parts = str.split('/');
+  if (parts.length !== 2) return 0;
+  const num = parseFloat(parts[0]);
+  const den = parseFloat(parts[1]);
+  if (!den || isNaN(num) || isNaN(den)) return 0;
+  return Math.min(num / den, 1);
+}
+
+function toggleClaimDetails(idx) {
+  const toggle = document.getElementById(`eval-toggle-${idx}`);
+  const details = document.getElementById(`eval-details-${idx}`);
+  if (!toggle || !details) return;
+  toggle.classList.toggle('open');
+  details.classList.toggle('open');
 }
 
 /* ========================================================================= */

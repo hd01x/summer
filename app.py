@@ -7,6 +7,7 @@ ACL 2026 Demo Track
 import os
 from typing import List, Optional
 
+import requests as http_requests
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -71,6 +72,21 @@ class AspectInfo(BaseModel):
     full_name: str
     description: str
     example_summary: str
+
+class EvaluateRequest(BaseModel):
+    summary: str
+    sentences: List[str]
+    kps: List[str]
+
+class ClaimDetail(BaseModel):
+    claim: str
+    sentences: List[int]
+
+class EvaluateResponse(BaseModel):
+    ecr: str
+    ssr: str
+    cpr: str
+    details: List[ClaimDetail]
 
 # --- Routes ---
 
@@ -155,6 +171,35 @@ async def analyze(req: AnalyzeRequest) -> AnalysisOut:
         strategy=analysis.strategy,
         sentences=sentences,
         results=results,
+    )
+
+EVAL_API_URL = "http://34.32.24.46:8000"
+
+@app.post("/api/evaluate")
+async def evaluate(req: EvaluateRequest) -> EvaluateResponse:
+    try:
+        resp = http_requests.post(
+            EVAL_API_URL,
+            json={"summary": req.summary, "sentences": req.sentences, "kps": req.kps},
+            timeout=30,
+        )
+        resp.raise_for_status()
+    except http_requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=502, detail="Evaluation service unavailable")
+    except http_requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="Evaluation service timed out")
+    except http_requests.exceptions.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"Evaluation service error: {e}")
+
+    data = resp.json()
+    return EvaluateResponse(
+        ecr=data.get("ecr", "0/0"),
+        ssr=data.get("ssr", "0/0"),
+        cpr=data.get("cpr", "0/0"),
+        details=[
+            ClaimDetail(claim=d.get("claim", ""), sentences=d.get("sentences", []))
+            for d in data.get("details", [])
+        ],
     )
 
 # Mount static files last so API routes take priority
