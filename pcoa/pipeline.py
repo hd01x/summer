@@ -14,16 +14,17 @@ from pcoa.text_processing import (
     format_indexed_abstract,
     get_sentences_by_indices,
     format_sentences_for_prompt,
-    index_sentences,
 )
 from pcoa.prompts import (
-    build_intrinsic_prompt,
-    build_prior_step1_prompt,
-    build_prior_step2_prompt,
     build_posthoc_step1_prompt,
     build_posthoc_step2_prompt,
     build_subclaim_decomposition_prompt,
 )
+from pcoa.prompt_prior import (
+    prompt_prior_step1,
+    prompt_prior_step2
+)
+from pcoa.prompt_intrinsic import prompt_intrinsic
 from pcoa.llm import (
     call_llm,
     parse_intrinsic_response,
@@ -54,19 +55,19 @@ class ArticleAnalysis:
     """Complete analysis of an article across all requested aspects."""
     pmid: str
     title: str
-    abstract: str
+    abstract: List[str]
     indexed_sentences: List[Tuple[int, str]] = field(default_factory=list)
     aspect_results: Dict[str, AspectResult] = field(default_factory=dict)
     strategy: str = ""
 
 
-def run_intrinsic(abstract: str, aspect: MedicalAspect, **llm_kwargs) -> AspectResult:
+def run_intrinsic(abstract: List[str], aspect: MedicalAspect, **llm_kwargs) -> AspectResult:
     """
     Run intrinsic context attribution strategy (§C.1).
     Single-step: generates summary, citations, and phrases together.
 
     Args:
-        abstract: Raw abstract text
+        abstract: List of sentence strings
         aspect: Target medical aspect
         **llm_kwargs: Forwarded to call_llm (model, api_key)
 
@@ -78,10 +79,8 @@ def run_intrinsic(abstract: str, aspect: MedicalAspect, **llm_kwargs) -> AspectR
         aspect_name=aspect.name,
         strategy="intrinsic",
     )
-
     formatted = format_indexed_abstract(abstract)
-    prompt = build_intrinsic_prompt(aspect, formatted)
-
+    prompt = prompt_intrinsic(aspect.code, formatted)
     raw = call_llm(prompt, **llm_kwargs)
     result.raw_responses.append(raw)
 
@@ -93,24 +92,11 @@ def run_intrinsic(abstract: str, aspect: MedicalAspect, **llm_kwargs) -> AspectR
 
     if not result.summary:
         result.error = "Failed to extract summary from LLM response"
-
+        
     return result
 
 
-def run_prior(abstract: str, aspect: MedicalAspect, **llm_kwargs) -> AspectResult:
-    """
-    Run prior context attribution strategy (§C.3).
-    Two-step: first retrieve sentences & phrases, then summarize.
-    This is the best-performing strategy according to the paper (§5.2).
-
-    Args:
-        abstract: Raw abstract text
-        aspect: Target medical aspect
-        **llm_kwargs: Forwarded to call_llm (model, api_key)
-
-    Returns:
-        AspectResult with all three components
-    """
+def run_prior(abstract: List[str], aspect: MedicalAspect, **llm_kwargs) -> AspectResult:
     result = AspectResult(
         aspect_code=aspect.code,
         aspect_name=aspect.name,
@@ -120,7 +106,7 @@ def run_prior(abstract: str, aspect: MedicalAspect, **llm_kwargs) -> AspectResul
     formatted = format_indexed_abstract(abstract)
 
     # Step 1: Retrieve relevant sentences and extract key phrases
-    step1_prompt = build_prior_step1_prompt(aspect, formatted)
+    step1_prompt = prompt_prior_step1(aspect.code, formatted)
     step1_raw = call_llm(step1_prompt, **llm_kwargs)
     result.raw_responses.append(step1_raw)
 
@@ -137,7 +123,7 @@ def run_prior(abstract: str, aspect: MedicalAspect, **llm_kwargs) -> AspectResul
     formatted_sents = format_sentences_for_prompt(result.cited_sentences)
     phrases_str = ", ".join(f'"{p}"' for p in phrases) if phrases else "N/A"
 
-    step2_prompt = build_prior_step2_prompt(aspect, formatted_sents, phrases_str)
+    step2_prompt = prompt_prior_step2(aspect.code, formatted_sents, phrases_str)
     step2_raw = call_llm(step2_prompt, **llm_kwargs)
     result.raw_responses.append(step2_raw)
 
@@ -149,13 +135,13 @@ def run_prior(abstract: str, aspect: MedicalAspect, **llm_kwargs) -> AspectResul
     return result
 
 
-def run_posthoc(abstract: str, aspect: MedicalAspect, **llm_kwargs) -> AspectResult:
+def run_posthoc(abstract: List[str], aspect: MedicalAspect, **llm_kwargs) -> AspectResult:
     """
     Run post-hoc context attribution strategy (§C.4).
     Two-step: first summarize, then retrieve sentences & phrases.
 
     Args:
-        abstract: Raw abstract text
+        abstract: List of sentence strings
         aspect: Target medical aspect
         **llm_kwargs: Forwarded to call_llm (model, api_key)
 
@@ -184,7 +170,7 @@ def run_posthoc(abstract: str, aspect: MedicalAspect, **llm_kwargs) -> AspectRes
 
     # Step 2: Retrieve sentences and phrases for the summary
     step2_prompt = build_posthoc_step2_prompt(aspect, formatted, summary)
-    step2_raw = call_llm(step2_prompt, **llm_kwargs)
+    step2_raw = call_llm(step2_raw, **llm_kwargs)
     result.raw_responses.append(step2_raw)
 
     indices, phrases = parse_posthoc_step2_response(step2_raw)
@@ -204,7 +190,7 @@ STRATEGIES = {
 
 
 def analyze_article(
-    abstract: str,
+    abstract: List[str],
     pmid: str = "",
     title: str = "",
     aspect_codes: Optional[List[str]] = None,
@@ -217,7 +203,7 @@ def analyze_article(
     Run the full PCoA pipeline on an article.
 
     Args:
-        abstract: Raw abstract text
+        abstract: List of sentence strings
         pmid: PubMed ID
         title: Article title
         aspect_codes: List of aspect codes to analyze (default: all 16)
@@ -238,14 +224,16 @@ def analyze_article(
     llm_kwargs = {}
     if model:
         llm_kwargs["model"] = model
+    else:
+        llm_kwargs["model"] = 'gpt-4o-mini'
     if api_key:
         llm_kwargs["api_key"] = api_key
+        
 
     analysis = ArticleAnalysis(
         pmid=pmid,
         title=title,
         abstract=abstract,
-        indexed_sentences=index_sentences(abstract),
         strategy=strategy,
     )
 
@@ -268,19 +256,3 @@ def analyze_article(
         analysis.aspect_results[code] = aspect_result
 
     return analysis
-
-
-def decompose_subclaims(summary: str) -> List[str]:
-    """
-    Decompose a summary into atomic subclaims using the prompt from §C.2.
-    Used in the evaluation framework (§4.3).
-
-    Args:
-        summary: Summary text to decompose
-
-    Returns:
-        List of subclaim strings
-    """
-    prompt = build_subclaim_decomposition_prompt(summary)
-    raw = call_llm(prompt)
-    return parse_subclaim_response(raw)

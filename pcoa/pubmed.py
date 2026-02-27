@@ -12,6 +12,7 @@ from typing import List, Optional
 import requests
 
 from pcoa.config import NCBI_EMAIL, NCBI_API_KEY
+from pcoa.text_processing import split_into_sentences
 
 ESEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 EFETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
@@ -22,7 +23,7 @@ class PubMedArticle:
     """Represents a PubMed article with its metadata and abstract."""
     pmid: str
     title: str
-    abstract: str
+    abstract: List[str]
     authors: List[str] = field(default_factory=list)
     journal: str = ""
     pub_date: str = ""
@@ -111,7 +112,7 @@ def _parse_pubmed_xml(xml_text: str) -> List[PubMedArticle]:
 
         # Extract abstract - handle structured abstracts with labels
         abstract_elem = article_elem.find(".//Abstract")
-        abstract = ""
+        abstract_text = ""
         if abstract_elem is not None:
             abstract_parts = []
             for abs_text in abstract_elem.findall("AbstractText"):
@@ -122,10 +123,12 @@ def _parse_pubmed_xml(xml_text: str) -> List[PubMedArticle]:
                         abstract_parts.append(f"{label}: {text}")
                     else:
                         abstract_parts.append(text)
-            abstract = " ".join(abstract_parts)
+            abstract_text = " ".join(abstract_parts)
 
-        if not abstract:
-            continue  # Skip articles without abstracts
+        if not abstract_text:
+            continue
+
+        abstract_sentences = split_into_sentences(abstract_text)
 
         # Authors
         authors = []
@@ -154,7 +157,7 @@ def _parse_pubmed_xml(xml_text: str) -> List[PubMedArticle]:
         articles.append(PubMedArticle(
             pmid=pmid,
             title=title,
-            abstract=abstract,
+            abstract=abstract_sentences,
             authors=authors,
             journal=journal,
             pub_date=pub_date,
