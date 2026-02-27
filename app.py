@@ -37,7 +37,7 @@ class PMCRequest(BaseModel):
 class ArticleOut(BaseModel):
     pmid: str
     title: str
-    abstract: str
+    abstract: List[str]
     authors: List[str]
     journal: str
     pub_date: str
@@ -49,7 +49,7 @@ class ArticleOut(BaseModel):
 class AnalyzeRequest(BaseModel):
     pmid: str
     title: str
-    abstract: str
+    abstract: List[str]
     aspects: List[str]
     strategy: str = "prior"
     model: str = ""
@@ -231,7 +231,7 @@ async def upload_pdf(file: UploadFile = File(...)) -> ArticleOut:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"PDF extraction failed: {e}")
-    if not ft.text.strip():
+    if not any(s.strip() for s in ft.text):
         raise HTTPException(status_code=422, detail="No text could be extracted from this PDF")
     return ArticleOut(
         pmid=f"pdf-{file.filename}",

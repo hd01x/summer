@@ -17,7 +17,7 @@ NCBI_API_KEY = os.getenv("NCBI_API_KEY", "")
 
 # Default OpenAI model (paper uses GPT-4o)
 OPENAI_MODEL = "gpt-4o"
-TEMPERATURE = 0.7
+TEMPERATURE = 0
 
 
 @dataclass

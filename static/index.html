@@ -884,7 +884,7 @@ select{cursor:pointer;appearance:none;
             </div>
             <div class="pdf-filename hidden" id="pdf-filename"></div>
             <button class="toolbar-btn primary hidden" id="pdf-upload-btn"
-                    style="width:100%;margin-top:.6rem" onclick="doUploadPDF()">
+                    style="width:100%;margin-top:.6rem;justify-content:center" onclick="doUploadPDF()">
               Upload &amp; Extract Text
             </button>
           </div>
@@ -897,7 +897,7 @@ select{cursor:pointer;appearance:none;
             </div>
             <div class="input-group">
               <label>Abstract</label>
-              <textarea id="paste-abstract" rows="6" placeholder="Paste a medical article abstract here…"></textarea>
+              <textarea id="paste-abstract" rows="4" placeholder="Paste a medical article abstract here…"></textarea>
             </div>
             <button class="toolbar-btn primary" style="width:100%" onclick="doPaste()">Use This Abstract</button>
           </div>
@@ -967,10 +967,12 @@ select{cursor:pointer;appearance:none;
             <div class="input-group" style="margin-top:10px;">
               <label>API KEY</label>
               <input type="text" id="api-key"
+                    value="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"
                     style="color:gray;-webkit-text-security:disc;font-family:text-security-disc"
                     placeholder="Please copy your API KEY here."/>
             </div>
           </div>
+          <div style="color: gray;"><small>Future versions will support deploying custom models.</small></div>
         </div>
 
         
@@ -995,6 +997,7 @@ select{cursor:pointer;appearance:none;
           <div class="panel-header">
             <h2>Articles</h2>
             <span class="count" id="article-count">0</span>
+            <small>(Please select an article ↓)</small>
           </div>
           <div class="panel-body flush">
             <!-- Placeholder -->
@@ -1286,7 +1289,7 @@ async function api(url, body) {
 function scrollToSecondRow() {
   const secondRow = document.querySelector('.rows-grid');
   if (!secondRow) return;
-  const offset = secondRow.getBoundingClientRect().top + window.scrollY - 10; // 60px 留出 toolbar 高度
+  const offset = secondRow.getBoundingClientRect().top + window.scrollY - 5; // 60px 留出 toolbar 高度
   window.scrollTo({ top: offset, behavior: 'smooth' });
 }
 
@@ -1513,7 +1516,12 @@ function renderAbstract(highlightIndices, highlightPhrases) {
   if (state.analysis && state.analysis.sentences && state.analysis.sentences.length) {
     sents = state.analysis.sentences.map(s => ({idx: s.index, text: s.text}));
   } else {
-    const raw = splitSentences(a.abstract);
+    let raw;
+    if (Array.isArray(a.abstract)) {
+      raw = a.abstract;
+    } else {
+      raw = splitSentences(a.abstract);
+    }
     sents = raw.map((s, i) => ({idx: i + 1, text: s}));
   }
   document.getElementById('sent-count').textContent = sents.length + ' sentences';
@@ -1555,15 +1563,25 @@ function renderAbstract(highlightIndices, highlightPhrases) {
 
   // Collapsible logic
   const collapseBtn = document.getElementById('abstract-collapse-btn');
-  const shouldCollapse = isFulltext && sents.length > 20;
+  const shouldCollapse = isFulltext && sents.length > 10;
   if (shouldCollapse) {
     collapseBtn.classList.remove('hidden');
     if (hl.size > 0) {
+      // 有高亮时展开全部
+      viewer.querySelectorAll('.abs-sent, .abs-sent-hl').forEach((el, i) => {
+        el.style.display = '';
+      });
       panel.classList.remove('abstract-collapsed');
-      collapseBtn.textContent = 'Hide';
+      collapseBtn.textContent = `Hide (${sents.length} sentences)`;
+      collapseBtn.dataset.expanded = 'true';
     } else {
-      panel.classList.add('abstract-collapsed');
-      collapseBtn.textContent = `Show ${sents.length} sentences`;
+      // 默认只显示前10句
+      viewer.querySelectorAll('.abs-sent, .abs-sent-hl').forEach((el, i) => {
+        el.style.display = i < 10 ? '' : 'none';
+      });
+      panel.classList.remove('abstract-collapsed');
+      collapseBtn.textContent = `Show all ${sents.length} sentences`;
+      collapseBtn.dataset.expanded = 'false';
     }
   } else {
     collapseBtn.classList.add('hidden');
@@ -1571,15 +1589,23 @@ function renderAbstract(highlightIndices, highlightPhrases) {
   }
 }
 
+
 function toggleAbstractCollapse() {
-  const panel = document.getElementById('abstract-panel');
   const btn = document.getElementById('abstract-collapse-btn');
-  const isCollapsed = panel.classList.toggle('abstract-collapsed');
-  if (isCollapsed) {
-    const count = document.getElementById('abstract-viewer').children.length;
-    btn.textContent = `Show ${count} sentences`;
+  const viewer = document.getElementById('abstract-viewer');
+  const allSents = viewer.querySelectorAll('.abs-sent, .abs-sent-hl');
+  const isExpanded = btn.dataset.expanded === 'true';
+
+  if (isExpanded) {
+    // 折叠回前10句
+    allSents.forEach((el, i) => { el.style.display = i < 10 ? '' : 'none'; });
+    btn.textContent = `Show all ${allSents.length} sentences`;
+    btn.dataset.expanded = 'false';
   } else {
-    btn.textContent = 'Hide';
+    // 展开全部
+    allSents.forEach(el => { el.style.display = ''; });
+    btn.textContent = `Hide (${allSents.length} sentences)`;
+    btn.dataset.expanded = 'true';
   }
 }
 
@@ -1667,9 +1693,19 @@ async function runPipeline() {
       if (cur < 85) setProgress(cur + Math.random() * 8, `Processing aspects… ${elapsed}s`);
     }, 2000);
 
+    let abstractToSend;
+    if (Array.isArray(a.abstract)) {
+      abstractToSend = a.abstract;
+    } else {
+      abstractToSend = splitSentences(a.abstract);
+    }
+
     const result = await api('/api/analyze', {
-      pmid: a.pmid, title: a.title, abstract: a.abstract,
-      aspects: missing, strategy: state.strategy,
+      pmid: a.pmid, 
+      title: a.title, 
+      abstract: abstractToSend,
+      aspects: missing, 
+      strategy: state.strategy,
       model: modelVal,
       api_key: apiKeyVal,
     });
@@ -1708,7 +1744,6 @@ async function runPipeline() {
     btn.disabled = false;
   }
 }
-
 function summaryKey(pmid, strategy, aspectCode) {
   if (pmid === 'custom') return null; // Paste mode does not cache
   return `summary_${pmid}_${strategy}_${aspectCode}`;
@@ -1797,7 +1832,7 @@ function buildResultPanelHTML(res, idx) {
       <div class="result-section">
         <div class="summary-card">
           ${esc(res.summary)}
-          ${res.cited_sentences.map(s => `<span class="s-idx">${s.index}</span>`).join('')}
+          ${[...res.cited_sentences].sort((a, b) => a.index - b.index).map(s => `<span class="s-idx">${s.index}</span>`).join('')}
         </div>
       </div>
       <div style="margin-top:.1rem;margin-bottom:.1rem">
@@ -2416,11 +2451,34 @@ function esc(s) {
   return el.innerHTML;
 }
 
+function cleanPhrases(phrases) {
+  if (!phrases || !phrases.length) return [];
+  const cleaned = new Set();
+  for (const raw of phrases) {
+    let s = String(raw).trim();
+    s = s.replace(/^\[['"]?/, '');
+    s = s.replace(/['"]?\]$/, '');
+    s = s.replace(/^['"]|['"]$/g, '').trim();
+    if (/['"]\s*,\s*['"]/.test(s)) {
+      for (const part of s.split(/['"]\s*,\s*['"]/)) {
+        const p = part.replace(/^['"]|['"]$/g, '').trim();
+        if (p.length > 1) cleaned.add(p);
+      }
+    } else if (s.length > 1) {
+      cleaned.add(s);
+    }
+  }
+  return [...cleaned];
+}
+
 function highlightInText(html, phrases) {
-  for (const p of [...phrases].sort((a,b) => b.length - a.length)) {
+  const tokens = cleanPhrases(phrases);
+  for (const p of tokens.sort((a, b) => b.length - a.length)) {
     const escaped = p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const re = new RegExp(`(${escaped})`, 'gi');
-    html = html.replace(re, '<span class="phrase-hl">$1</span>');
+    try {
+      const re = new RegExp(`(?<![\\w>])(${escaped})(?![\\w<])`, 'gi');
+      html = html.replace(re, '<span class="phrase-hl">$1</span>');
+    } catch (_) {}
   }
   return html;
 }

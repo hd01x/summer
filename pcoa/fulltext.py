@@ -9,7 +9,7 @@ import re
 from dataclasses import dataclass, field
 from typing import List, Tuple
 from xml.etree import ElementTree as ET
-
+from pcoa.text_processing import split_into_sentences
 import requests
 
 # ---------------------------------------------------------------------------
@@ -18,7 +18,7 @@ import requests
 
 @dataclass
 class FulltextResult:
-    text: str
+    text: List[str]
     pmc_id: str = ""
     title: str = ""
     authors: List[str] = field(default_factory=list)
@@ -36,10 +36,13 @@ class FulltextResult:
 # ---------------------------------------------------------------------------
 
 _KEEP_PREFIXES = (
-    "abstract", "introduction", "background",
-    "method", "material",                          # catches "methods", "materials and methods", etc.
-    "result", "finding",                           # catches "results", "results and discussion", "findings"
-    "discussion", "conclusion",
+    "abstract",
+    "intro",          # INTRO
+    "introduction", "background",
+    "method", "material",
+    "result", "finding",
+    "discussion", "discuss",   # DISCUSS
+    "conclusion", "concl",     # CONCL
 )
 
 _DROP_SECTIONS = {
@@ -52,6 +55,7 @@ _DROP_SECTIONS = {
     "data availability", "data sharing", "competing interests",
     "conflict of interest", "conflicts of interest",
     "abbreviations", "appendix", "appendices",
+    "ref", "ack_fund", "auth_cont", "comp_int", "suppl",
 }
 
 _MAX_WORDS = 8_000
@@ -191,7 +195,7 @@ def _parse_bioc_xml(xml_bytes: bytes) -> FulltextResult:
     word_count = len(filtered_text.split())
 
     return FulltextResult(
-        text=filtered_text,
+        text=split_into_sentences(filtered_text),
         pmc_id=pmc_id,
         title=title,
         authors=authors,
@@ -291,22 +295,36 @@ def _detect_pdf_sections(pages_text: List[str]) -> List[Tuple[str, str]]:
 
 
 def extract_pdf_text(file_bytes: bytes) -> FulltextResult:
-    """Extract text from a PDF using pdfplumber.
-
-    Raises ``ValueError`` when no text can be extracted.
-    """
-    import pdfplumber  # imported here so the dep is only needed for PDF uploads
+    """Extract text from a PDF using PyMuPDF (fitz), fallback to pdfplumber."""
     import io
 
     pages_text: List[str] = []
-    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text()
-            if text:
-                pages_text.append(text)
+
+    try:
+        import fitz  # pymupdf
+        with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+            for page in doc:
+                text = page.get_text("text")
+                if text and text.strip():
+                    pages_text.append(text)
+    except ImportError:
+        import pdfplumber
+        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text(x_tolerance=2, y_tolerance=3)
+                if text:
+                    pages_text.append(text)
 
     if not pages_text:
         raise ValueError("Could not extract text — the PDF may be image-based or empty.")
+
+    def fix_text(t: str) -> str:
+        t = re.sub(r'-\n(\S)', r'\1', t) 
+        t = re.sub(r'(?<!\n)\n(?!\n)', ' ', t)
+        t = re.sub(r' {2,}', ' ', t) 
+        return t.strip()
+
+    pages_text = [fix_text(p) for p in pages_text]
 
     sections = _detect_pdf_sections(pages_text)
 
@@ -326,6 +344,15 @@ def extract_pdf_text(file_bytes: bytes) -> FulltextResult:
         if len(filtered.split()) >= _MAX_WORDS:
             is_truncated = True
 
+        if not filtered.strip():
+            full_text = "\n\n".join(pages_text)
+            words = full_text.split()
+            if len(words) > _MAX_UNSTRUCTURED_WORDS:
+                filtered = " ".join(words[:_MAX_UNSTRUCTURED_WORDS])
+                is_truncated = True
+            else:
+                filtered = full_text
+
     # Guess title: first short non-empty line
     title = "Uploaded PDF"
     for page in pages_text[:1]:
@@ -338,8 +365,11 @@ def extract_pdf_text(file_bytes: bytes) -> FulltextResult:
 
     word_count = len(filtered.split())
 
+
+    sentences = split_into_sentences(filtered)
+
     return FulltextResult(
-        text=filtered,
+        text=sentences,
         title=title,
         sections_found=section_names,
         is_truncated=is_truncated,
