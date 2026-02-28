@@ -50,7 +50,7 @@ def call_llm(prompt: str, model: str = "", temperature: float = TEMPERATURE, api
         Raw response text from the model
     """
     DEFAULT_API_KEY = os.getenv("OPENAI_API_KEY", "")
-    DEFAULT_MODEL = "GPT-5.1"
+    DEFAULT_MODEL = "GPT-5.2"
     
     if not api_key:
         api_key = DEFAULT_API_KEY
