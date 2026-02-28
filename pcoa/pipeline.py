@@ -221,13 +221,7 @@ def analyze_article(
     strategy_fn = STRATEGIES[strategy]
     codes = aspect_codes or ASPECT_ORDER
 
-    llm_kwargs = {}
-    if model:
-        llm_kwargs["model"] = model
-    else:
-        llm_kwargs["model"] = 'gpt-4o-mini'
-    if api_key:
-        llm_kwargs["api_key"] = api_key
+    llm_kwargs = {"model": model, "api_key": api_key}
         
 
     analysis = ArticleAnalysis(
