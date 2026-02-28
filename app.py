@@ -8,6 +8,10 @@ import os
 import time
 from typing import List, Optional
 
+# Startup check: verify OPENAI_API_KEY is available
+_key = os.getenv("OPENAI_API_KEY", "")
+print(f"[STARTUP] OPENAI_API_KEY set: {bool(_key)}, length: {len(_key)}")
+
 import requests as http_requests
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.staticfiles import StaticFiles
