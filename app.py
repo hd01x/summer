@@ -9,7 +9,9 @@ import time
 from typing import List, Optional
 
 import sys
-# Startup check: verify OPENAI_API_KEY is available
+# Startup check: list env vars that contain "OPENAI" or "API" or "KEY"
+_relevant = [k for k in os.environ.keys() if any(w in k.upper() for w in ["OPENAI", "API_KEY", "RAILWAY"])]
+print(f"[STARTUP] Relevant env vars: {_relevant}", flush=True)
 _key = os.getenv("OPENAI_API_KEY", "")
 print(f"[STARTUP] OPENAI_API_KEY set: {bool(_key)}, length: {len(_key)}", flush=True)
 
