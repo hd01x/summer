@@ -257,6 +257,11 @@ select{cursor:pointer;appearance:none;
 .result-block {
   padding: 0.75rem 1.5rem;
   transition: var(--transition);
+  border-radius: var(--radius);
+}
+.result-block:hover {
+  background: var(--surface2);
+  box-shadow: var(--shadow-md);
 }
 
 .result-section {
@@ -910,13 +915,15 @@ select{cursor:pointer;appearance:none;
         <div class="panel-body">
           <div class="strategy-cards">
             <div class="strategy-card selected" data-strategy="prior" onclick="selectStrategy('prior')">
-              <h4>Prior Attribution <span class="strategy-best">Best</span></h4>
-              <p>Identifies relevant sentences & phrases first, then generates summary. Highest F1 (§5.2).</p>
+              <h4>Prior Attribution <span class="strategy-best">Default</span></h4>
+              <p>Identifies relevant sentences & phrases first, then generates summary.</p>
             </div>
+
             <div class="strategy-card" data-strategy="intrinsic" onclick="selectStrategy('intrinsic')">
               <h4>Intrinsic Attribution</h4>
               <p>Generates summary, citations, and phrases in a single step.</p>
             </div>
+            
             <div class="strategy-card" data-strategy="post-hoc" onclick="selectStrategy('post-hoc')">
               <h4>Post-Hoc Attribution</h4>
               <p>Generates summary first, then retrieves supporting evidence.</p>
@@ -967,12 +974,13 @@ select{cursor:pointer;appearance:none;
             <div class="input-group" style="margin-top:10px;">
               <label>API KEY</label>
               <input type="text" id="api-key"
-                    value="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"
+                    value=""
                     style="color:gray;-webkit-text-security:disc;font-family:text-security-disc"
                     placeholder="Please copy your API KEY here."/>
             </div>
           </div>
-          <div style="color: gray;"><small>Future versions will support deploying custom models.</small></div>
+          <div style="color: gray; font-size: 12px;"><small>Future versions will support deploying custom models.</small></div>
+          <div style="color: gray; font-size: 12px;"><small>If you do not make a selection, the system will default to using GPT-5.2 and the default API key.</small></div>
         </div>
 
         
@@ -1104,7 +1112,7 @@ select{cursor:pointer;appearance:none;
         <div class="eval-placeholder" id="eval-placeholder">
           <div class="icon">&#128202;</div>
           <h3>No Results Yet</h3>
-          <p>Run the PCoA pipeline first, then evaluate each aspect's summary quality here.</p>
+          <p>Run the summarize, then evaluate each aspect's summary quality here automatically.</p>
         </div>
         <!-- actual eval content (hidden initially) -->
         <div id="eval-content" style="display:none">
@@ -1172,7 +1180,7 @@ const ASPECTS_META = [
   {code:'R',name:'Randomization'},{code:'B',name:'Blinding'},
   {code:'FU',name:'Funding'},{code:'RE',name:'Registration'},
 ];
-const DEFAULT_SELECTION = ['P','I','C','O'];
+const DEFAULT_SELECTION = ['P','I','C'];
 
 let state = {
   mode: 'search',
@@ -1641,7 +1649,7 @@ async function runPipeline() {
   const modelVal = getSelectedModel();
   if (modelVal === null) return;
   const apiKeyVal = document.getElementById('api-key').value.trim();
-  if (!apiKeyVal) return showToast('Please enter your API key', 'error');
+  // if (!apiKeyVal) return showToast('Please enter your API key', 'error');
 
   state.evaluations = {};
   state.userHoveredEval = false;
@@ -2078,9 +2086,9 @@ function renderEvalResults(idx, data) {
 
   return `
     <div class="eval-metrics" id="eval-metrics-${idx}">
-      ${renderMetricCard('ecr', 'ECR', 'Evidence Claim Recall', data.ecr, idx)}
-      ${renderMetricCard('ssr', 'SSR', 'Supportive Sentence Recall', data.ssr, idx)}
-      ${renderMetricCard('cpr', 'CPR', 'Contributory Phrase Recall', data.cpr, idx)}
+      ${renderMetricCard('ecr', 'ECR', 'Entailed Claim Rate', data.ecr, idx)}
+      ${renderMetricCard('ssr', 'VCR', 'Valid Citation Rate', data.ssr, idx)}
+      ${renderMetricCard('cpr', 'CPR', 'Contributory Phrase Rate', data.cpr, idx)}
     </div>
 
     ${claimsCitations.length ? `
@@ -2258,13 +2266,13 @@ function renderMetricCard(type, label, fullName, value, idx) {
 
 const METRIC_INFO = {
   ecr: {
-    title: '<span style="background:var(--green);color:#fff;padding:2px 9px;border-radius:6px;font-size:.72rem;letter-spacing:.04em">ECR</span> Evidence Claim Recall',
+    title: '<span style="background:var(--green);color:#fff;padding:2px 9px;border-radius:6px;font-size:.72rem;letter-spacing:.04em">ECR</span> Entailed Claim Rate',
     body: `
       <p>ECR measures how well the <strong>cited sentences</strong> support the generated summary.
       It answers: <em>"Is every claim in the summary backed by evidence?"</em></p>
       <p><strong>How it works:</strong></p>
       <ol class="mm-steps">
-        <li>The summary is <strong>decomposed</strong> into atomic subclaims using an LLM (Mistral-Large).</li>
+        <li>The summary is <strong>decomposed</strong> into atomic subclaims using an LLM.</li>
         <li>Each subclaim is checked against the cited sentences using <strong>Natural Language Inference</strong> (NLI / entailment).</li>
         <li>A subclaim counts as <em>supported</em> if at least one cited sentence entails it.</li>
       </ol>
@@ -2274,9 +2282,9 @@ const METRIC_INFO = {
     `,
   },
   ssr: {
-    title: '<span style="background:var(--blue);color:#fff;padding:2px 9px;border-radius:6px;font-size:.72rem;letter-spacing:.04em">SSR</span> Supportive Sentence Recall',
+    title: '<span style="background:var(--blue);color:#fff;padding:2px 9px;border-radius:6px;font-size:.72rem;letter-spacing:.04em">SSR</span> Valid Sentence Rate',
     body: `
-      <p>SSR measures how many of the <strong>cited sentences</strong> actually support the summary.
+      <p>VCR measures how many of the <strong>cited sentences</strong> actually support the summary.
       It answers: <em>"Is every cited sentence relevant, or are some unnecessary?"</em></p>
       <p><strong>How it works:</strong></p>
       <ol class="mm-steps">
@@ -2284,13 +2292,13 @@ const METRIC_INFO = {
         <li>For each cited sentence, NLI checks whether it <strong>entails at least one</strong> subclaim.</li>
         <li>A sentence counts as <em>supporting</em> if it entails any subclaim.</li>
       </ol>
-      <span class="mm-formula">SSR &nbsp;=&nbsp; supporting sentences &nbsp;/&nbsp; total cited sentences</span>
-      <p>An SSR of <strong>3/5</strong> means 3 of 5 cited sentences support the summary. The 2 non-supporting sentences were cited but don't actually entail any claim &mdash; they may be redundant or irrelevant citations.</p>
+      <span class="mm-formula">VCR &nbsp;=&nbsp; supporting sentences &nbsp;/&nbsp; total cited sentences</span>
+      <p>An VCR of <strong>3/5</strong> means 3 of 5 cited sentences support the summary. The 2 non-supporting sentences were cited but don't actually entail any claim &mdash; they may be redundant or irrelevant citations.</p>
       <div class="mm-ref">Corresponds to sentence recall (S-R) in the PCoA paper &sect;4.2, Algorithm 1 lines 10&ndash;13. Unlike prior work that checks sentences collectively, PCoA evaluates each sentence independently.</div>
     `,
   },
   cpr: {
-    title: '<span style="background:var(--accent);color:#fff;padding:2px 9px;border-radius:6px;font-size:.72rem;letter-spacing:.04em">CPR</span> Contributory Phrase Recall',
+    title: '<span style="background:var(--accent);color:#fff;padding:2px 9px;border-radius:6px;font-size:.72rem;letter-spacing:.04em">CPR</span> Contributory Phrase Rate',
     body: `
       <p>CPR measures how many <strong>key phrase tokens</strong> are actually reflected in the summary.
       It answers: <em>"Do the contributory phrases genuinely contribute to the summary?"</em></p>

@@ -7,11 +7,15 @@ import json
 import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
-
+import os
 import anthropic
 from openai import OpenAI
 
 from pcoa.config import OPENAI_MODEL, TEMPERATURE
+
+
+from dotenv import load_dotenv
+load_dotenv()
 
 # Model registry: UI name -> (provider, model_id, base_url)
 MODEL_REGISTRY = {
@@ -32,6 +36,7 @@ class LLMResponse:
 
 
 def call_llm(prompt: str, model: str = "", temperature: float = TEMPERATURE, api_key: str = "") -> str:
+    
     """
     Call an LLM provider with the given prompt.
 
@@ -44,9 +49,13 @@ def call_llm(prompt: str, model: str = "", temperature: float = TEMPERATURE, api
     Returns:
         Raw response text from the model
     """
+    DEFAULT_API_KEY = os.getenv("OPENAI_API_KEY", "")
+    DEFAULT_MODEL = "GPT-5.2"
+    
     if not api_key:
-        raise ValueError("Please enter your API key before running the analysis.")
-
+        api_key = DEFAULT_API_KEY
+        model = DEFAULT_MODEL
+    
     registry_entry = MODEL_REGISTRY.get(model)
 
     if registry_entry:
