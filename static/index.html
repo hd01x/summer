@@ -914,14 +914,16 @@ select{cursor:pointer;appearance:none;
         <div class="panel-header"><h2>STEP 2:&nbsp;Attribution Strategy</h2></div>
         <div class="panel-body">
           <div class="strategy-cards">
-            <div class="strategy-card selected" data-strategy="intrinsic" onclick="selectStrategy('intrinsic')">
-              <h4>Intrinsic Attribution <span class="strategy-best">Default</span></h4>
-              <p>Generates summary, citations, and phrases in a single step.</p>
-            </div>
-            <div class="strategy-card" data-strategy="prior" onclick="selectStrategy('prior')">
+            <div class="strategy-card selected" data-strategy="prior" onclick="selectStrategy('prior')">
               <h4>Prior Attribution</h4>
               <p>Identifies relevant sentences & phrases first, then generates summary.</p>
             </div>
+
+            <div class="strategy-card" data-strategy="intrinsic" onclick="selectStrategy('intrinsic')">
+              <h4>Intrinsic Attribution <span class="strategy-best">Default</span></h4>
+              <p>Generates summary, citations, and phrases in a single step.</p>
+            </div>
+            
             <div class="strategy-card" data-strategy="post-hoc" onclick="selectStrategy('post-hoc')">
               <h4>Post-Hoc Attribution</h4>
               <p>Generates summary first, then retrieves supporting evidence.</p>
@@ -1181,7 +1183,7 @@ const DEFAULT_SELECTION = ['P','I','C','O'];
 
 let state = {
   mode: 'search',
-  strategy: 'intrinsic',
+  strategy: 'prior',
   selectedAspects: new Set(DEFAULT_SELECTION),
   articles: [],
   selectedArticle: null,
