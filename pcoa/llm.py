@@ -51,10 +51,15 @@ def call_llm(prompt: str, model: str = "", temperature: float = TEMPERATURE, api
     """
     DEFAULT_API_KEY = os.getenv("OPENAI_API_KEY", "")
     DEFAULT_MODEL = "GPT-5.2"
-    
+
+    import sys
+    print(f"[call_llm] api_key provided: {bool(api_key)}, DEFAULT_API_KEY set: {bool(DEFAULT_API_KEY)}, len={len(DEFAULT_API_KEY)}", flush=True)
+
     if not api_key:
         api_key = DEFAULT_API_KEY
         model = DEFAULT_MODEL
+
+    print(f"[call_llm] using api_key len={len(api_key)}, model={model}", flush=True)
     
     registry_entry = MODEL_REGISTRY.get(model)
 
