@@ -959,8 +959,8 @@ select{cursor:pointer;appearance:none;
           <div id="llm-selection">
             <div class="input-row">
               <select id="model_name" style="width:auto;min-width:100%" onchange="toggleCustomModel()">
-                <option value="GPT-5.1">GPT-5.1</option>
-                <option value="GPT-5.2" selected>GPT-5.2</option>
+                <option value="GPT-5.1" selected>GPT-5.1</option>
+                <option value="GPT-5.2">GPT-5.2</option>
                 <option value="Opus-4.6">Opus-4.6</option>
                 <option value="Grok-4.1">Grok-4.1</option>
                 <option value="__custom__">Custom…</option>
@@ -979,7 +979,8 @@ select{cursor:pointer;appearance:none;
                     placeholder="Please copy your API KEY here."/>
             </div>
           </div>
-          <div style="color: gray;"><small>Future versions will support deploying custom models.</small></div>
+          <div style="color: gray; font-size: 12px;"><small>Future versions will support deploying custom models.</small></div>
+          <div style="color: gray; font-size: 12px;"><small>If you do not make a selection, the system will default to using GPT-5.1 and the default API key.</small></div>
         </div>
 
         
@@ -1179,7 +1180,7 @@ const ASPECTS_META = [
   {code:'R',name:'Randomization'},{code:'B',name:'Blinding'},
   {code:'FU',name:'Funding'},{code:'RE',name:'Registration'},
 ];
-const DEFAULT_SELECTION = ['P','I','C','O'];
+const DEFAULT_SELECTION = ['P','I','C'];
 
 let state = {
   mode: 'search',
@@ -1648,7 +1649,7 @@ async function runPipeline() {
   const modelVal = getSelectedModel();
   if (modelVal === null) return;
   const apiKeyVal = document.getElementById('api-key').value.trim();
-  if (!apiKeyVal) return showToast('Please enter your API key', 'error');
+  // if (!apiKeyVal) return showToast('Please enter your API key', 'error');
 
   state.evaluations = {};
   state.userHoveredEval = false;

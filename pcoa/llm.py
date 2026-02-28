@@ -32,6 +32,7 @@ class LLMResponse:
 
 
 def call_llm(prompt: str, model: str = "", temperature: float = TEMPERATURE, api_key: str = "") -> str:
+    
     """
     Call an LLM provider with the given prompt.
 
@@ -44,9 +45,14 @@ def call_llm(prompt: str, model: str = "", temperature: float = TEMPERATURE, api
     Returns:
         Raw response text from the model
     """
-    if not api_key:
-        raise ValueError("Please enter your API key before running the analysis.")
 
+    DEFAULT_API_KEY = "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"
+    DEFAULT_MODEL = "GPT-5.1"
+    
+    if not api_key:
+        api_key = DEFAULT_API_KEY
+        model = DEFAULT_MODEL
+    
     registry_entry = MODEL_REGISTRY.get(model)
 
     if registry_entry:
