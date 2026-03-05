@@ -113,9 +113,9 @@ Each strategy returns an `AspectResult` containing `summary`, `sentence_indices`
 
 The summary, indexed sentences, and key phrases are sent to the external evaluation service (`EVAL_API_URL`), which returns three metrics:
 
-- **ECR** (Evidence Coverage Ratio)
-- **SSR** (Summary Support Ratio)
-- **CPR** (Contributory Phrase Ratio)
+- **ECR** (Entailed Claim Rate)
+- **VCR** (valid Citation Rate)
+- **CPR** (Contributory Phrase Rate)
 
 Along with per-claim citation mappings and contributory key phrase lists.
 
