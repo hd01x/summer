@@ -253,7 +253,7 @@ async def upload_pdf(file: UploadFile = File(...)) -> ArticleOut:
         word_count=ft.word_count,
     )
 
-EVAL_API_URL = os.environ.get("EVAL_API_URL", "http://34.32.24.46:8000")
+EVAL_API_URL = os.environ.get("EVAL_API_URL", "http://34.32.5.63:8000")
 
 _EVAL_MAX_RETRIES = 3
 _EVAL_RETRY_DELAY = 1.5  # seconds
